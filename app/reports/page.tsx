@@ -138,46 +138,63 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </button>
       </form>
 
-      {/* DOH-KDVP tabela */}
+      {/* DOH-KDVP tabela — za free zaklenjena */}
       <section style={{ overflowX: "auto", marginBottom: 40 }}>
         <h2 style={{ marginBottom: 12 }}>DOH-KDVP — Kapitalski dobički po letu</h2>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f5f5f5", borderBottom: "2px solid #ddd" }}>
-              <th style={{ padding: 12, textAlign: "left" }}>Leto</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Št. prodaj</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Bruto izkupiček</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Neto izkupiček</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Bruto nabavna vr.</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Neto nabavna vr.</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Dobiček</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Izguba</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Neto P&amp;L</th>
-              <th style={{ padding: 12, textAlign: "right", color: "#b45309" }}>Davek (25%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {annualSummary.map((row) => (
-              <tr key={row.year} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 12, fontWeight: 600 }}>{row.year}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{row.sellCount}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalGrossProceeds)}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalNetProceeds)}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalGrossCost)}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalNetCost)}</td>
-                <td style={{ padding: 12, textAlign: "right", color: "#16a34a" }}>{formatCurrency(row.realizedProfit)}</td>
-                <td style={{ padding: 12, textAlign: "right", color: "#dc2626" }}>{formatCurrency(Math.abs(row.realizedLoss))}</td>
-                <td style={{ padding: 12, textAlign: "right", fontWeight: 600, color: row.netRealized >= 0 ? "#16a34a" : "#dc2626" }}>{formatCurrency(row.netRealized)}</td>
-                <td style={{ padding: 12, textAlign: "right", color: row.taxEstimate > 0 ? "#b45309" : "#888", fontWeight: row.taxEstimate > 0 ? 600 : 400 }}>
-                  {row.taxEstimate > 0 ? formatCurrency(row.taxEstimate) : "—"}
-                </td>
+
+        {isPro ? (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ backgroundColor: "#f5f5f5", borderBottom: "2px solid #ddd" }}>
+                <th style={{ padding: 12, textAlign: "left" }}>Leto</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Št. prodaj</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Bruto izkupiček</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Neto izkupiček</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Bruto nabavna vr.</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Neto nabavna vr.</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Dobiček</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Izguba</th>
+                <th style={{ padding: 12, textAlign: "right" }}>Neto P&amp;L</th>
+                <th style={{ padding: 12, textAlign: "right", color: "#b45309" }}>Davek (25%)</th>
               </tr>
-            ))}
-            {annualSummary.length === 0 && (
-              <tr><td colSpan={10} style={{ padding: 24, textAlign: "center", color: "#666" }}>Ni realiziranih prodaj za prikaz.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {annualSummary.map((row) => (
+                <tr key={row.year} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: 12, fontWeight: 600 }}>{row.year}</td>
+                  <td style={{ padding: 12, textAlign: "right" }}>{row.sellCount}</td>
+                  <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalGrossProceeds)}</td>
+                  <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalNetProceeds)}</td>
+                  <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalGrossCost)}</td>
+                  <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalNetCost)}</td>
+                  <td style={{ padding: 12, textAlign: "right", color: "#16a34a" }}>{formatCurrency(row.realizedProfit)}</td>
+                  <td style={{ padding: 12, textAlign: "right", color: "#dc2626" }}>{formatCurrency(Math.abs(row.realizedLoss))}</td>
+                  <td style={{ padding: 12, textAlign: "right", fontWeight: 600, color: row.netRealized >= 0 ? "#16a34a" : "#dc2626" }}>{formatCurrency(row.netRealized)}</td>
+                  <td style={{ padding: 12, textAlign: "right", color: row.taxEstimate > 0 ? "#b45309" : "#888", fontWeight: row.taxEstimate > 0 ? 600 : 400 }}>
+                    {row.taxEstimate > 0 ? formatCurrency(row.taxEstimate) : "—"}
+                  </td>
+                </tr>
+              ))}
+              {annualSummary.length === 0 && (
+                <tr><td colSpan={10} style={{ padding: 24, textAlign: "center", color: "#666" }}>Ni realiziranih prodaj za prikaz.</td></tr>
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+            <div className="text-4xl mb-3">🔒</div>
+            <h3 className="text-base font-bold text-slate-800 mb-2">Tabela kapitalskih dobičkov je dostopna v Pro planu</h3>
+            <p className="text-sm text-slate-500 mb-5 max-w-sm mx-auto">
+              Nadgradite na Pro in si oglejte letni pregled realiziranih dobičkov, izgub in oceno davka (25%).
+            </p>
+            <a
+              href="/cenik"
+              className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              Nadgradi na Pro — 19 €/leto →
+            </a>
+          </div>
+        )}
       </section>
 
       {/* Freemium status bar */}
@@ -191,7 +208,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             </p>
           </div>
           <a
-            href="/#cenik"
+            href="/cenik"
             className="shrink-0 bg-amber-500 hover:bg-amber-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
           >
             Nadgradi na Pro
