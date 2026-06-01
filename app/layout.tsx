@@ -45,7 +45,7 @@ export default async function RootLayout({
               </a>
               <nav className="hidden sm:flex items-center gap-1">
                 <NavLink href="/navodila">Navodila</NavLink>
-                <NavLink href="/#cenik">Cenik</NavLink>
+                <NavLink href="/cenik">Cenik</NavLink>
                 {initialUser && (
                   <>
                     <NavLink href="/dashboard">Nadzorna plošča</NavLink>
@@ -59,7 +59,7 @@ export default async function RootLayout({
             <div className="flex items-center gap-3">
               {!initialUser && (
                 <>
-                  <a href="/#cenik" className="hidden sm:block text-sm text-slate-600 hover:text-blue-700 font-medium transition-colors">
+                  <a href="/cenik" className="hidden sm:block text-sm text-slate-600 hover:text-blue-700 font-medium transition-colors">
                     Cenik
                   </a>
                   <a href="/login" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
