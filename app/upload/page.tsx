@@ -3,20 +3,19 @@
 import { useState, useRef } from "react";
 
 const BROKERS = [
-  { value: "binance", label: "Binance", icon: "🟡", note: "Trade History CSV" },
   { value: "etoro", label: "eToro", icon: "🟢", note: "Account Statement CSV" },
-  { value: "coinbase", label: "Coinbase", icon: "🔵", note: "Transaction Report CSV" },
-  { value: "kraken", label: "Kraken", icon: "🟣", note: "Ledgers CSV" },
-  { value: "trading212", label: "Trading212", icon: "🟠", note: "Kmalu podprto" },
+  { value: "trading212", label: "Trading212", icon: "🟠", note: "Trade History CSV" },
+  { value: "revolut", label: "Revolut", icon: "🔷", note: "Trading CSV" },
+  { value: "interactive-brokers", label: "Interactive Brokers", icon: "🔵", note: "Activity Report CSV" },
   { value: "trade-republic", label: "Trade Republic", icon: "⚫", note: "Kmalu podprto" },
-  { value: "revolut", label: "Revolut", icon: "🔷", note: "Kmalu podprto" },
+  { value: "saxo", label: "Saxo Bank", icon: "🔴", note: "Kmalu podprto" },
   { value: "other", label: "Drugo", icon: "📄", note: "Splošni format" },
 ] as const;
 
 type BrokerValue = (typeof BROKERS)[number]["value"];
 
 export default function UploadPage() {
-  const [broker, setBroker] = useState<BrokerValue>("binance");
+  const [broker, setBroker] = useState<BrokerValue>("etoro");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -198,42 +197,45 @@ export default function UploadPage() {
 
 function BrokerInstructions({ broker }: { broker: BrokerValue }) {
   const instructions: Record<BrokerValue, { steps: string[] }> = {
-    binance: {
-      steps: [
-        "Pojdite na Binance → Wallet → Transaction History",
-        "Kliknite 'Generate All Statements'",
-        "Izberite časovno obdobje in potrdite",
-        "Prenesite generirani CSV",
-      ],
-    },
     etoro: {
       steps: [
-        "Pojdite na eToro → Portfelj → Zgodovina",
-        "Kliknite 'Izvozi' v zgornjem desnem kotu",
-        "Izberite 'Account Statement'",
-        "Prenesite Excel in ga shranite kot CSV",
+        "Pojdite na eToro → Portfolio → History",
+        "Kliknite gumb 'Izvozi' (Export) zgoraj desno",
+        "Izberite 'Account Statement' in nastavite celotno davčno leto",
+        "Prenesite Excel datoteko in jo shranite kot CSV",
+        "Podrobna navodila: /navodila/etoro",
       ],
     },
-    coinbase: {
+    trading212: {
       steps: [
-        "Pojdite na Coinbase → Profil → Izjave",
-        "Izberite 'Transaction history'",
-        "Kliknite 'Generate report' in izberite CSV",
-        "Prenesite datoteko",
+        "Pojdite na Trading212 → History (ikona ure)",
+        "Kliknite 'Export' v zgornjem desnem kotu",
+        "Izberite celotno davčno leto ali 'All time'",
+        "Prenesite CSV datoteko",
+        "Podrobna navodila: /navodila/trading212",
       ],
     },
-    kraken: {
+    revolut: {
       steps: [
-        "Pojdite na Kraken → History → Ledgers",
-        "Kliknite 'Export' in izberite CSV",
-        "Izberite časovno obdobje",
-        "Prenesite datoteko",
+        "Odprite Revolut aplikacijo → Profile → Documents",
+        "Izberite 'Trading account statements'",
+        "Nastavite datum od začetka do konca davčnega leta",
+        "Izberite CSV format in prenesite",
+        "Podrobna navodila: /navodila/revolut",
       ],
     },
-    trading212: { steps: ["Podpora za Trading212 prihaja kmalu. Prosimo počakajte."] },
+    "interactive-brokers": {
+      steps: [
+        "Pojdite na IBKR → Reports → Flex Queries",
+        "Ustvarite Activity Report za davčno leto",
+        "Izberite CSV format",
+        "Prenesite datoteko",
+        "Podrobna navodila: /navodila/interactive-brokers",
+      ],
+    },
     "trade-republic": { steps: ["Podpora za Trade Republic prihaja kmalu. Prosimo počakajte."] },
-    revolut: { steps: ["Podpora za Revolut prihaja kmalu. Prosimo počakajte."] },
-    other: { steps: ["Za nestandardne formate se obrnite na podporo."] },
+    saxo: { steps: ["Podpora za Saxo Bank prihaja kmalu. Prosimo počakajte."] },
+    other: { steps: ["Za nestandardne formate se obrnite na podporo prek email naslova."] },
   };
 
   const { steps } = instructions[broker] ?? { steps: [] };

@@ -8,15 +8,16 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-6 py-24 text-center">
           <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            Podprto: Binance, eToro, Coinbase, Kraken, Trading212 in več
+            Podprto: Trading212, eToro, Revolut, Interactive Brokers in več
           </div>
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
-            Kripto davki za<br />
-            <span className="text-yellow-300">Slovenijo</span> — brez glavobola
+            Napoved davka na delnice<br />
+            <span className="text-yellow-300">brez glavobola</span>
           </h1>
           <p className="mt-6 text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed">
-            Naloži CSV iz svoje borze, mi izračunamo FIFO dobiček in pripravimo
-            XML za eDavke. Pravilno, hitro, brez računovodja.
+            Naloži CSV iz svoje borze — mi izračunamo dobiček po FIFO metodi in
+            pripravimo <strong className="text-white">DOH-KDVP XML</strong> za uvoz na eDavke.
+            Pravilno, hitro, brez računovodja.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -25,75 +26,68 @@ export default function HomePage() {
             >
               Začni brezplačno →
             </Link>
-            <a
-              href="#kako-deluje"
+            <Link
+              href="/navodila"
               className="border border-white/40 hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors"
             >
-              Kako deluje?
-            </a>
+              Navodila
+            </Link>
           </div>
-          <p className="mt-4 text-blue-200 text-sm">Brez kreditne kartice. Brezplačno do 50 transakcij.</p>
+          <p className="mt-4 text-blue-200 text-sm">Brez kreditne kartice. Brezplačno za 1 davčno leto.</p>
         </div>
       </section>
 
       {/* Social proof bar */}
-      <section className="bg-slate-50 border-y border-slate-200 py-6">
-        <div className="max-w-5xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 text-slate-500 text-sm font-medium">
+      <section className="bg-slate-50 border-y border-slate-200 py-5">
+        <div className="max-w-5xl mx-auto px-6 flex flex-wrap items-center justify-center gap-6 text-slate-600 text-sm font-medium">
           <span>✓ DOH-KDVP XML za eDavke</span>
           <span>✓ FIFO metoda (zakonsko zahtevana)</span>
-          <span>✓ Podpora za kripto in ETF</span>
+          <span>✓ Delnice, ETF in dividende</span>
           <span>✓ Vaši podatki ostanejo vaši</span>
+          <span>✓ Slovensko davčno pravo</span>
         </div>
       </section>
 
       {/* Kako deluje */}
-      <section id="kako-deluje" className="py-20 max-w-5xl mx-auto px-6">
+      <section className="py-20 max-w-5xl mx-auto px-6">
         <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-bold">Tri koraki do eDavkov</h2>
-          <p className="mt-3 text-slate-500 text-lg">Brez Excel tabel, brez ročnih izračunov.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold">Štiri koraki do oddane napovedi</h2>
+          <p className="mt-3 text-slate-500 text-lg">Brez Excel tabel, brez ročnih izračunov, brez napak.</p>
         </div>
-        <div className="grid sm:grid-cols-3 gap-8">
-          <StepCard
-            number="1"
-            icon="📁"
-            title="Naloži CSV"
-            description="Prenesi transakcijsko zgodovino iz svoje borze in jo naloži v naš sistem. Podpiramo najpopularnejše borze."
-          />
-          <StepCard
-            number="2"
-            icon="⚙️"
-            title="Avtomatski FIFO izračun"
-            description="Naš sistem po zakonu zahtevani FIFO metodi izračuna kapitalski dobiček ali izgubo za vsako prodajo."
-          />
-          <StepCard
-            number="3"
-            icon="📄"
-            title="Prenesi XML za eDavke"
-            description="Generiraj DOH-KDVP XML datoteko, ki jo direktno uvozite na portal eDavki brez ročnega vnosa."
-          />
+        <div className="grid sm:grid-cols-4 gap-6">
+          <StepCard number="1" icon="📁" title="Izvozi iz borze" description="Prenesi CSV iz Trading212, eToro, Revolut ali IBKR. Naša navodila ti pokažejo točno kako." />
+          <StepCard number="2" icon="⬆️" title="Naloži v sistem" description="Datoteko povleci in spusti. Sistem samodejno prepozna format in uvozi transakcije." />
+          <StepCard number="3" icon="⚙️" title="Avtomatski izračun" description="FIFO metoda izračuna kapitalski dobiček ali izgubo za vsako prodano pozicijo." />
+          <StepCard number="4" icon="📄" title="Prenesi XML" description="Generirani DOH-KDVP XML uvozi direktno na eDavke — brez ročnega vnosa podatkov." />
+        </div>
+        <div className="mt-10 text-center">
+          <Link href="/navodila" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-500 font-semibold">
+            Poglej podrobna navodila po borzah →
+          </Link>
         </div>
       </section>
 
       {/* Podprte borze */}
       <section className="py-16 bg-slate-50">
         <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-2xl font-bold text-center mb-10">Podprte borze in platforme</h2>
+          <h2 className="text-2xl font-bold text-center mb-3">Podprte borze in platforme</h2>
+          <p className="text-center text-slate-500 mb-10 text-sm">Za vsako borzo imamo podrobna navodila kako priti do CSV datoteke.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { name: "Binance", icon: "🟡", note: "CSV izvoz" },
-              { name: "eToro", icon: "🟢", note: "CSV izvoz" },
-              { name: "Coinbase", icon: "🔵", note: "CSV izvoz" },
-              { name: "Kraken", icon: "🟣", note: "CSV izvoz" },
-              { name: "Trading212", icon: "🟠", note: "Kmalu" },
-              { name: "Trade Republic", icon: "⚫", note: "Kmalu" },
-              { name: "Revolut", icon: "🔷", note: "Kmalu" },
-              { name: "Saxo", icon: "🔴", note: "Kmalu" },
+              { name: "eToro", icon: "🟢", status: "Podprto", href: "/navodila/etoro" },
+              { name: "Trading212", icon: "🟠", status: "Podprto", href: "/navodila/trading212" },
+              { name: "Revolut", icon: "🔷", status: "Podprto", href: "/navodila/revolut" },
+              { name: "Interactive Brokers", icon: "🔵", status: "Podprto", href: "/navodila/interactive-brokers" },
+              { name: "Trade Republic", icon: "⚫", status: "Kmalu", href: "/navodila" },
+              { name: "Saxo Bank", icon: "🔴", status: "Kmalu", href: "/navodila" },
+              { name: "Plus500", icon: "🟡", status: "Kmalu", href: "/navodila" },
+              { name: "Druga platforma", icon: "📄", status: "Po meri", href: "/navodila" },
             ].map((b) => (
-              <div key={b.name} className="bg-white border border-slate-200 rounded-xl p-4 text-center hover:border-blue-300 transition-colors">
+              <Link key={b.name} href={b.href} className={`flex flex-col items-center p-4 rounded-xl border-2 text-center hover:shadow-md transition-all no-underline ${b.status === "Podprto" ? "border-green-200 bg-white hover:border-green-400" : "border-slate-200 bg-white opacity-75 hover:border-slate-300"}`}>
                 <div className="text-3xl mb-2">{b.icon}</div>
-                <div className="font-semibold text-slate-800">{b.name}</div>
-                <div className="text-xs text-slate-500 mt-1">{b.note}</div>
-              </div>
+                <div className="font-semibold text-slate-800 text-sm">{b.name}</div>
+                <div className={`text-xs mt-1 font-medium ${b.status === "Podprto" ? "text-green-600" : "text-slate-400"}`}>{b.status}</div>
+              </Link>
             ))}
           </div>
         </div>
@@ -103,7 +97,7 @@ export default function HomePage() {
       <section id="cenik" className="py-20 max-w-5xl mx-auto px-6">
         <div className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl font-bold">Cenik</h2>
-          <p className="mt-3 text-slate-500 text-lg">Preprosto in pošteno.</p>
+          <p className="mt-3 text-slate-500 text-lg">Preprosto in pošteno — za enkrat brezplačno.</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-8 max-w-3xl mx-auto">
           <PricingCard
@@ -111,11 +105,11 @@ export default function HomePage() {
             price="0 €"
             period="za vedno"
             features={[
-              "Do 50 transakcij",
               "1 davčno leto",
+              "Do 200 transakcij",
               "FIFO izračun",
               "Pregled nadzorne plošče",
-              "Podpora za 4 borze",
+              "Podpora za vse borze",
             ]}
             cta="Začni brezplačno"
             href="/login"
@@ -129,7 +123,7 @@ export default function HomePage() {
               "Neomejene transakcije",
               "Vsa davčna leta",
               "DOH-KDVP XML izvoz",
-              "DOH-DIV (staking/dividende)",
+              "DOH-DIV (dividende)",
               "Prednostna podpora",
               "Vsi novi parserji",
             ]}
@@ -138,6 +132,9 @@ export default function HomePage() {
             highlighted={true}
           />
         </div>
+        <p className="text-center text-slate-400 text-xs mt-6">
+          Konkurenca zaračuna €40/leto za eno davčno leto. Mi ponudimo enako za manj.
+        </p>
       </section>
 
       {/* FAQ */}
@@ -146,20 +143,24 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold text-center mb-10">Pogosta vprašanja</h2>
           <div className="space-y-4">
             <FaqItem
-              q="Ali moram prijaviti kripto dobičke v Sloveniji?"
-              a="Da. Po slovenskem zakonu je vsak realiziran kapitalski dobiček od prodaje kriptovalut obdavčen z 25% dohodnino. Napoved je treba oddati prek portala eDavki z obrazcem DOH-KDVP."
+              q="Kdaj moram prijaviti davek od prodaje delnic?"
+              a="V Sloveniji moraš davčno napoved od dobička iz kapitala (obrazec DOH-KDVP) oddati do 28. februarja za preteklo davčno leto. Napoved je obvezna, če si v letu prodal katerokoli vrednostno papirje z dobičkom ali izgubo."
             />
             <FaqItem
-              q="Kaj je FIFO metoda?"
-              a="FIFO (First In, First Out) pomeni, da se pri prodaji upoštevajo najstarejši nakupi. Slovenska davčna zakonodaja zahteva uporabo te metode za izračun kapitalskih dobičkov."
+              q="Katera metoda izračuna se zahteva v Sloveniji?"
+              a="Zakon o dohodnini zahteva uporabo metode FIFO (First In, First Out) — pri prodaji se upoštevajo najstarejši nakupi. Naš sistem to avtomatsko upošteva."
             />
             <FaqItem
-              q="Kako izvozim CSV iz borze?"
-              a="Vsaka borza ima drugačen postopek. Na splošno: pojdite v zgodovino transakcij in poiščite gumb 'Izvozi' ali 'Export CSV'. Na naši strani bomo kmalu objavili navodila za vsako borzo posebej."
+              q="Kako uvozim XML v eDavke?"
+              a="Po prijavi na edavki.durs.si klikni na 'Dokumenti' → 'Uvoz'. Poišči svoj XML in ga naloži. eDavki samodejno prepozna tip obrazca (DOH-KDVP). Podrobna navodila najdeš v našem vodniku."
             />
             <FaqItem
-              q="Ali so moji podatki varni?"
-              a="Vaši podatki so shranjeni v varovani bazi podatkov. Ne prodajamo in ne delimo vaših finančnih podatkov s tretjimi osebami. Vse transakcije so vidne samo vam."
+              q="Kaj pa dividende?"
+              a="Dividende se prijavljajo ločeno na obrazcu DOH-DIV. Naš sistem podpira izvoz tega obrazca — v Pro načrtu. Brezplačna verzija zajema samo kapitalske dobičke (nakup/prodaja)."
+            />
+            <FaqItem
+              q="Ali upoštevate provizije borze?"
+              a="Da. Provizije pri nakupu povečajo nabavno vrednost (cost basis), provizije pri prodaji pa zmanjšajo izkupiček. To je v skladu s slovenskim davčnim zakonom."
             />
           </div>
         </div>
@@ -168,14 +169,16 @@ export default function HomePage() {
       {/* CTA footer */}
       <section className="bg-blue-700 text-white py-16">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold">Pripravi si davčno poročilo danes</h2>
+          <h2 className="text-3xl font-bold">Pripravi si davčno napoved danes</h2>
           <p className="mt-4 text-blue-200 text-lg">Brezplačno, hitro, brez računovodja.</p>
-          <Link
-            href="/login"
-            className="inline-block mt-8 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-10 py-4 rounded-xl text-lg transition-colors shadow-lg"
-          >
-            Začni brezplačno →
-          </Link>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/login" className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-10 py-4 rounded-xl text-lg transition-colors shadow-lg">
+              Začni brezplačno →
+            </Link>
+            <Link href="/navodila" className="border border-white/40 hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors">
+              Navodila za borze
+            </Link>
+          </div>
         </div>
       </section>
     </main>
@@ -189,22 +192,18 @@ function StepCard({ number, icon, title, description }: { number: string; icon: 
         {number}
       </div>
       <div className="text-4xl mb-4 mt-2">{icon}</div>
-      <h3 className="text-lg font-bold mb-2">{title}</h3>
+      <h3 className="text-base font-bold mb-2">{title}</h3>
       <p className="text-slate-500 text-sm leading-relaxed">{description}</p>
     </div>
   );
 }
 
-function PricingCard({
-  name, price, period, features, cta, href, highlighted,
-}: {
+function PricingCard({ name, price, period, features, cta, href, highlighted }: {
   name: string; price: string; period: string; features: string[]; cta: string; href: string; highlighted: boolean;
 }) {
   return (
     <div className={`rounded-2xl border-2 p-8 flex flex-col ${highlighted ? "border-blue-600 bg-blue-50 shadow-xl" : "border-slate-200 bg-white"}`}>
-      {highlighted && (
-        <div className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-3">Priporočeno</div>
-      )}
+      {highlighted && <div className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-3">Priporočeno</div>}
       <h3 className="text-xl font-bold">{name}</h3>
       <div className="mt-4 mb-6">
         <span className="text-4xl font-extrabold">{price}</span>
@@ -218,10 +217,7 @@ function PricingCard({
           </li>
         ))}
       </ul>
-      <Link
-        href={href}
-        className={`mt-8 block text-center py-3 rounded-xl font-bold transition-colors ${highlighted ? "bg-blue-600 hover:bg-blue-500 text-white" : "border-2 border-slate-300 hover:border-blue-400 text-slate-800"}`}
-      >
+      <Link href={href} className={`mt-8 block text-center py-3 rounded-xl font-bold transition-colors ${highlighted ? "bg-blue-600 hover:bg-blue-500 text-white" : "border-2 border-slate-300 hover:border-blue-400 text-slate-800"}`}>
         {cta}
       </Link>
     </div>

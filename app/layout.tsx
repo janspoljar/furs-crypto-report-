@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KriptoDavki.si — Kripto davčno poročanje za Slovenijo",
-  description: "Naloži CSV iz Binance, eToro, Coinbase ali Kraken. Avtomatski FIFO izračun in DOH-KDVP XML za eDavke.",
+  title: "DavkiNaDelnice.si — Davčno poročanje za delnice in ETF",
+  description: "Naloži CSV iz Trading212, eToro, Revolut ali Interactive Brokers. Avtomatski FIFO izračun in DOH-KDVP XML za eDavke.",
 };
 
 export default async function RootLayout({
@@ -41,16 +41,20 @@ export default async function RootLayout({
             <div className="flex items-center gap-6">
               <a href="/" className="flex items-center gap-2 font-bold text-lg text-blue-700 hover:text-blue-600 transition-colors no-underline">
                 <span className="text-2xl">🇸🇮</span>
-                <span>KriptoDavki</span>
+                <span>DavkiNaDelnice</span>
               </a>
-              {initialUser && (
-                <nav className="hidden sm:flex items-center gap-1">
-                  <NavLink href="/dashboard">Nadzorna plošča</NavLink>
-                  <NavLink href="/upload">Uvoz CSV</NavLink>
-                  <NavLink href="/transactions">Transakcije</NavLink>
-                  <NavLink href="/reports">Poročila</NavLink>
-                </nav>
-              )}
+              <nav className="hidden sm:flex items-center gap-1">
+                <NavLink href="/navodila">Navodila</NavLink>
+                <NavLink href="/#cenik">Cenik</NavLink>
+                {initialUser && (
+                  <>
+                    <NavLink href="/dashboard">Nadzorna plošča</NavLink>
+                    <NavLink href="/upload">Uvoz CSV</NavLink>
+                    <NavLink href="/transactions">Transakcije</NavLink>
+                    <NavLink href="/reports">Poročila</NavLink>
+                  </>
+                )}
+              </nav>
             </div>
             <div className="flex items-center gap-3">
               {!initialUser && (
@@ -72,7 +76,7 @@ export default async function RootLayout({
         </div>
         <footer className="border-t border-slate-200 bg-slate-50 py-6">
           <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-slate-500">
-            <span>© 2025 KriptoDavki.si — Kripto davčno poročanje za Slovenijo</span>
+            <span>© 2025 DavkiNaDelnice.si — Davčno poročanje za delnice in ETF</span>
             <span>Ni davčni nasvet. Preverite z računovodjem.</span>
           </div>
         </footer>
