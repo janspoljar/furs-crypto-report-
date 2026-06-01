@@ -81,115 +81,159 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const filteredYearLabel = yearFilter ? ` (${yearFilter})` : "";
 
   return (
-    <main style={{ maxWidth: 1200, margin: "0 auto", padding: 24 }}>
-      <h1>Letna davčna poročila</h1>
-      <p style={{ color: "#666", marginTop: 8 }}>
-        Pregled realiziranih prodaj po FIFO modelu in izvoz za eDavke.
-      </p>
-
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 24, marginBottom: 32 }}>
-        <div style={{ padding: 16, backgroundColor: "#f0f0f0", borderRadius: 8 }}>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Skupaj prodaj</div>
-          <div style={{ fontSize: 28, fontWeight: "bold", color: "#333" }}>{totalSells}</div>
-        </div>
-        <div style={{ padding: 16, backgroundColor: "#eef", borderRadius: 8 }}>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Leta z realizacijami</div>
-          <div style={{ fontSize: 28, fontWeight: "bold", color: "#333" }}>{totalYears}</div>
-        </div>
-        <div style={{ padding: 16, backgroundColor: "#fff7e6", borderRadius: 8 }}>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Model izračuna</div>
-          <div style={{ fontSize: 18, fontWeight: "bold", color: "#555" }}>FIFO (nakup/prodaja)</div>
+    <main>
+      <section className="page-head">
+        <div className="wrap">
+          <div className="row between" style={{ flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <h1>Davčna poročila</h1>
+              <p>Pripravljena uradna poročila za eDavki, ločena po davčnem letu.</p>
+            </div>
+            <span className="badge badge-free"><span className="dot" />Brezplačni načrt</span>
+          </div>
         </div>
       </section>
 
-      <div style={{ padding: 16, backgroundColor: "#fff7e6", borderRadius: 8, border: "1px solid #f2d6a0", marginBottom: 24 }}>
-        <p style={{ margin: 0, color: "#333" }}>
-          <strong>Opomba:</strong> Trenutna logika upošteva le nakup/prodaja transakcije in provizije.
-          Dividende in staking nagrade so obravnavane ločeno v razdelku DOH-DIV spodaj.
-        </p>
-      </div>
+      <section className="wrap" style={{ paddingBottom: 80 }}>
+        {/* Pro gate banner */}
+        <div className="banner-pro">
+          <div className="lt">
+            <div className="ic">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+              <strong>XML izvoz je samo za Pro načrt.</strong>
+              <p>Poročila lahko pregledaš, a za prenos uradnega XML za eDavki potrebuješ Pro.</p>
+            </div>
+          </div>
+          <a className="btn btn-secondary" href="/cenik">Nadgradi na Pro <span className="arr">→</span></a>
+        </div>
 
-      <form method="get" style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Davčno leto
-          <select name="year" defaultValue={yearFilter} style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}>
-            <option value="">Vsa leta</option>
-            {sellYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
+        {/* Year cards — DOH-KDVP */}
+        <h2 className="h-3" style={{ margin: "28px 0 14px" }}>Doh-KDVP — Kapitalski dobiček od vrednostnih papirjev</h2>
+
+        {annualSummary.length === 0 ? (
+          <div className="empty">
+            <h3>Ni poročil</h3>
+            <p>Naloži CSV izpisek in generiraj prvo poročilo.</p>
+            <a href="/upload" className="btn btn-primary">Naloži izpisek</a>
+          </div>
+        ) : (
+          <div className="report-grid">
+            {annualSummary.map((row, i) => (
+              <article className="report-card" key={row.year} data-report-card>
+                <div className="top">
+                  <div className="yr">{row.year}</div>
+                  <span className="badge badge-pro"><span className="dot" />Pripravljeno</span>
+                </div>
+                <div className="grid-2">
+                  <div>
+                    <div className="k">Prodaje</div>
+                    <div className="v">{row.sellCount}</div>
+                  </div>
+                  <div>
+                    <div className="k">Skupni dobiček</div>
+                    <div className={`v ${row.netRealized >= 0 ? "pos" : "neg"}`}>
+                      {row.netRealized >= 0 ? "+" : ""}{row.netRealized.toFixed(2)} €
+                    </div>
+                  </div>
+                </div>
+                <div className="grid-2" style={{ borderTop: "none", paddingTop: 0 }}>
+                  <div>
+                    <div className="k">Ocenjeni davek</div>
+                    <div className="v">{row.taxEstimate > 0 ? `${row.taxEstimate.toFixed(2)} €` : "0,00 €"}</div>
+                  </div>
+                  <div>
+                    <div className="k">Realizacije</div>
+                    <div className="v" style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500 }}>FIFO</div>
+                  </div>
+                </div>
+                <div className="row-actions">
+                  <button className="btn btn-line btn-sm" style={{ flex: "0 0 auto" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Pregled
+                  </button>
+                  <button className="btn btn-primary btn-sm" disabled>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Prenesi XML
+                  </button>
+                </div>
+                <div className="lock-tip">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Prenos XML je na voljo samo za Pro načrt
+                </div>
+              </article>
             ))}
-          </select>
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Razhroščevanje
-          <select name="debug" defaultValue={debugMode ? "1" : "0"} style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}>
-            <option value="0">Izklopljeno</option>
-            <option value="1">Vklopljeno</option>
-          </select>
-        </label>
-        <button type="submit" style={{ padding: "10px 16px", borderRadius: 6, border: "none", backgroundColor: "#0066cc", color: "white", cursor: "pointer" }}>
-          Osveži
-        </button>
-      </form>
+          </div>
+        )}
 
-      {/* DOH-KDVP tabela */}
-      <section style={{ overflowX: "auto", marginBottom: 40 }}>
-        <h2 style={{ marginBottom: 12 }}>DOH-KDVP — Kapitalski dobički po letu</h2>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f5f5f5", borderBottom: "2px solid #ddd" }}>
-              <th style={{ padding: 12, textAlign: "left" }}>Leto</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Št. prodaj</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Bruto izkupiček</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Neto izkupiček</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Bruto nabavna vr.</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Neto nabavna vr.</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Dobiček</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Izguba</th>
-              <th style={{ padding: 12, textAlign: "right" }}>Neto P&amp;L</th>
-              <th style={{ padding: 12, textAlign: "right", color: "#b45309" }}>Davek (25%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {annualSummary.map((row) => (
-              <tr key={row.year} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 12, fontWeight: 600 }}>{row.year}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{row.sellCount}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalGrossProceeds)}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalNetProceeds)}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalGrossCost)}</td>
-                <td style={{ padding: 12, textAlign: "right" }}>{formatCurrency(row.totalNetCost)}</td>
-                <td style={{ padding: 12, textAlign: "right", color: "#16a34a" }}>{formatCurrency(row.realizedProfit)}</td>
-                <td style={{ padding: 12, textAlign: "right", color: "#dc2626" }}>{formatCurrency(Math.abs(row.realizedLoss))}</td>
-                <td style={{ padding: 12, textAlign: "right", fontWeight: 600, color: row.netRealized >= 0 ? "#16a34a" : "#dc2626" }}>{formatCurrency(row.netRealized)}</td>
-                <td style={{ padding: 12, textAlign: "right", color: row.taxEstimate > 0 ? "#b45309" : "#888", fontWeight: row.taxEstimate > 0 ? 600 : 400 }}>
-                  {row.taxEstimate > 0 ? formatCurrency(row.taxEstimate) : "—"}
-                </td>
-              </tr>
-            ))}
-            {annualSummary.length === 0 && (
-              <tr><td colSpan={10} style={{ padding: 24, textAlign: "center", color: "#666" }}>Ni realiziranih prodaj za prikaz.</td></tr>
-            )}
-          </tbody>
-        </table>
+        {/* DOH-KDVP export form */}
+        <div style={{ marginTop: 32 }}>
+          <TaxpayerProfileStatus userId={user.id} />
+          <DohKdvpExportForm availableYears={sellYears} />
+        </div>
+
+        {/* Doh-Div section */}
+        <div className="div-section">
+          <div className="copy">
+            <span className="badge badge-info">Doh-Div</span>
+            <h3>Poročilo za dividende</h3>
+            <p>Ločena obravnava dividend (25 % dohodnine) s pripadajočo XML datoteko za eDavki. Vključi tudi tuji plačan davek po dvojnem obdavčevanju.</p>
+          </div>
+          <a className="btn btn-primary" href="/cenik">Odkleni z Pro <span className="arr">→</span></a>
+        </div>
+
+        {divYears.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <DohDivExportForm availableYears={divYears} />
+          </div>
+        )}
+
+        {/* Breakdown preview table */}
+        {annualSummary.length > 0 && (
+          <>
+            <h2 className="h-3" style={{ margin: "56px 0 14px" }}>
+              Razčlenitev {annualSummary[0].year} — predogled
+            </h2>
+            <div className="tbl-wrap">
+              <div className="tbl-scroll">
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>Leto</th>
+                      <th className="num">Prodaje</th>
+                      <th className="num">Neto izkupiček</th>
+                      <th className="num">Neto nabavna vr.</th>
+                      <th className="num">Dobiček</th>
+                      <th className="num">Izguba</th>
+                      <th className="num">Neto P&amp;L</th>
+                      <th className="num">Davek (25 %)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {annualSummary.map((row) => (
+                      <tr key={row.year}>
+                        <td><strong>{row.year}</strong></td>
+                        <td className="num mono">{row.sellCount}</td>
+                        <td className="num mono">{row.totalNetProceeds.toFixed(2)} €</td>
+                        <td className="num mono">{row.totalNetCost.toFixed(2)} €</td>
+                        <td className="num mono t-pos">+{row.realizedProfit.toFixed(2)} €</td>
+                        <td className="num mono t-neg">{row.realizedLoss.toFixed(2)} €</td>
+                        <td className={`num mono ${row.netRealized >= 0 ? "t-pos" : "t-neg"}`}>
+                          {row.netRealized >= 0 ? "+" : ""}{row.netRealized.toFixed(2)} €
+                        </td>
+                        <td className="num mono" style={{ color: row.taxEstimate > 0 ? "var(--warn)" : "var(--muted)" }}>
+                          {row.taxEstimate > 0 ? `${row.taxEstimate.toFixed(2)} €` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </section>
-
-      <TaxpayerProfileStatus userId={user.id} />
-
-      <DohKdvpExportForm availableYears={sellYears} />
-
-      {/* DOH-DIV */}
-      <section style={{ marginTop: 48, paddingTop: 32, borderTop: "2px solid #e5e7eb" }}>
-        <DohDivExportForm availableYears={divYears} />
-      </section>
-
-      {debugMode && (
-        <section style={{ padding: 16, backgroundColor: "#f3f7ff", borderRadius: 8, border: "1px solid #c8d7ff", marginTop: 32 }}>
-          <h2 style={{ marginTop: 0 }}>FIFO prodaje — surovi podatki{filteredYearLabel}</h2>
-          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, color: "#333" }}>
-            {JSON.stringify(salesForYear, null, 2)}
-          </pre>
-        </section>
-      )}
     </main>
   );
 }

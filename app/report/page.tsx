@@ -23,7 +23,7 @@ type PreviewResponse = {
   sales: PreviewSale[];
 };
 
-export default function Page(): JSX.Element {
+export default function Page(): React.JSX.Element {
   const [userId, setUserId] = useState<string>("");
   const [targetYear, setTargetYear] = useState<number>(2024);
   const [loading, setLoading] = useState<boolean>(false);

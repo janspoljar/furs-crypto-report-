@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       date: s.date.toISOString(),
       asset: s.asset,
       amountSold: s.amountSold,
-      revenue: s.revenue,
+      revenue: s.grossProceeds,
       cost: s.cost,
       profit: s.profit,
       taxAmount: s.taxAmount,
