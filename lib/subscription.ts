@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export const FREE_TX_LIMIT = 50;
+export const FREE_TX_LIMIT = 200;
 export const FREE_YEAR_LIMIT = 1;
 
 export type Plan = "free" | "pro";

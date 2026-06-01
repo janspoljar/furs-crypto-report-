@@ -105,11 +105,15 @@ export default function HomePage() {
             price="0 €"
             period="za vedno"
             features={[
-              "1 davčno leto",
               "Do 200 transakcij",
-              "FIFO izračun",
-              "Pregled nadzorne plošče",
+              "FIFO izračun in pregled",
+              "Nadzorna plošča z P&L",
               "Podpora za vse borze",
+              "Navodila in vodniki",
+            ]}
+            notIncluded={[
+              "DOH-KDVP XML izvoz",
+              "DOH-DIV (dividende)",
             ]}
             cta="Začni brezplačno"
             href="/login"
@@ -122,11 +126,12 @@ export default function HomePage() {
             features={[
               "Neomejene transakcije",
               "Vsa davčna leta",
-              "DOH-KDVP XML izvoz",
-              "DOH-DIV (dividende)",
+              "DOH-KDVP XML izvoz za eDavke",
+              "DOH-DIV (dividende in staking)",
               "Prednostna podpora",
               "Vsi novi parserji",
             ]}
+            notIncluded={[]}
             cta="Začni Pro"
             href="/login"
             highlighted={true}
@@ -198,8 +203,8 @@ function StepCard({ number, icon, title, description }: { number: string; icon: 
   );
 }
 
-function PricingCard({ name, price, period, features, cta, href, highlighted }: {
-  name: string; price: string; period: string; features: string[]; cta: string; href: string; highlighted: boolean;
+function PricingCard({ name, price, period, features, notIncluded, cta, href, highlighted }: {
+  name: string; price: string; period: string; features: string[]; notIncluded: string[]; cta: string; href: string; highlighted: boolean;
 }) {
   return (
     <div className={`rounded-2xl border-2 p-8 flex flex-col ${highlighted ? "border-blue-600 bg-blue-50 shadow-xl" : "border-slate-200 bg-white"}`}>
@@ -213,6 +218,12 @@ function PricingCard({ name, price, period, features, cta, href, highlighted }: 
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
             <span className="text-green-500 font-bold mt-0.5">✓</span>
+            {f}
+          </li>
+        ))}
+        {notIncluded.map((f) => (
+          <li key={f} className="flex items-start gap-2 text-sm text-slate-400">
+            <span className="font-bold mt-0.5">✗</span>
             {f}
           </li>
         ))}
