@@ -311,6 +311,92 @@ function normalizeTradeRepublicRow(
   };
 }
 
+function normalizeRevolutRow(
+  row: Record<string, string>
+): NormalizedPreviewRow | null {
+  const originalKeys = Object.keys(row);
+  const normalizedKeys = originalKeys.map((key) => key.toLowerCase().trim());
+
+  const findColumn = (candidates: string[]) => {
+    for (const candidate of candidates) {
+      const index = normalizedKeys.indexOf(candidate);
+      if (index !== -1) return row[originalKeys[index]];
+    }
+    return undefined;
+  };
+
+  // Revolut columns: Date, Ticker, Type, Quantity, "Price per share", "Total Amount", Currency, "FX Rate"
+  const date = findColumn(["date", "time", "created at", "timestamp"]);
+  const typeRaw = findColumn(["type", "action", "transaction type"]);
+  const asset = findColumn(["ticker", "symbol", "instrument"]);
+  const amountStr = findColumn(["quantity", "shares", "units", "qty"]);
+  const priceStr = findColumn(["price per share", "price", "rate"]);
+  const totalStr = findColumn(["total amount", "total", "amount", "value"]);
+  const feeStr = findColumn(["fee", "commission"]);
+
+  if (!date || !typeRaw) return null;
+
+  const amount = parseNumber(amountStr);
+  let priceEur = parseNumber(priceStr);
+  if (!priceEur && amount > 0) {
+    priceEur = parseNumber(totalStr) / amount;
+  } else if (!priceEur) {
+    priceEur = parseNumber(totalStr);
+  }
+
+  return {
+    broker: "revolut",
+    date,
+    type: normalizeType(typeRaw),
+    asset: asset || typeRaw,
+    amount,
+    priceEur,
+    feeEur: parseNumber(feeStr) || undefined,
+    rawCsvRow: row,
+  };
+}
+
+function normalizeIbkrRow(
+  row: Record<string, string>
+): NormalizedPreviewRow | null {
+  const originalKeys = Object.keys(row);
+  const normalizedKeys = originalKeys.map((key) => key.toLowerCase().trim());
+
+  const findColumn = (candidates: string[]) => {
+    for (const candidate of candidates) {
+      const index = normalizedKeys.indexOf(candidate);
+      if (index !== -1) return row[originalKeys[index]];
+    }
+    return undefined;
+  };
+
+  // IBKR columns: Symbol, ISIN, Buy/Sell, Quantity, TradePrice, IBCommission, TradeMoney, CurrencyPrimary, TradeDate
+  const date = findColumn(["tradedate", "date", "settledate", "timestamp"]);
+  const typeRaw = findColumn(["buy/sell", "type", "action", "side"]);
+  const asset = findColumn(["symbol", "ticker", "instrument", "isin"]);
+  const amountStr = findColumn(["quantity", "qty", "shares", "units"]);
+  const priceStr = findColumn(["tradeprice", "price", "unitprice"]);
+  const feeStr = findColumn(["ibcommission", "commission", "fee"]);
+  const exchange = findColumn(["exchange", "market", "venue", "listingexchange"]);
+
+  if (!date || !typeRaw || !asset) return null;
+
+  const amount = Math.abs(parseNumber(amountStr));
+  const priceEur = parseNumber(priceStr);
+
+  return {
+    broker: "interactive-brokers",
+    date,
+    type: normalizeType(typeRaw),
+    asset,
+    amount,
+    priceEur,
+    feeEur: Math.abs(parseNumber(feeStr)) || undefined,
+    exchange: exchange || undefined,
+    rawCsvRow: row,
+  };
+}
+
 function parseCSVLine(line: string): string[] {
   const fields: string[] = [];
   let current = "";
@@ -396,13 +482,10 @@ export async function POST(req: Request) {
     const normalizedRows: Array<NormalizedPreviewRow | null> = rows.map((rowValues) => {
       const rowObject = createRowObject(headers, rowValues);
 
-      if (broker === "trading212") {
-        return normalizeTrading212Row(rowObject);
-      }
-
-      if (broker === "trade-republic") {
-        return normalizeTradeRepublicRow(rowObject);
-      }
+      if (broker === "trading212") return normalizeTrading212Row(rowObject);
+      if (broker === "trade-republic") return normalizeTradeRepublicRow(rowObject);
+      if (broker === "revolut") return normalizeRevolutRow(rowObject);
+      if (broker === "interactive-brokers") return normalizeIbkrRow(rowObject);
 
       return normalizeRow(broker, rowObject);
     });
