@@ -171,7 +171,7 @@ export default function DohDivExportForm({ availableYears }: Props) {
                   <div style={{ padding: 14, backgroundColor: "#f5f5f5", borderRadius: 8, border: "1px solid #ddd" }}>
                     <div style={{ fontSize: 11, color: "#555", marginBottom: 4, textTransform: "uppercase" }}>Plačniki</div>
                     <div style={{ fontSize: 22, fontWeight: "bold", color: "#333" }}>{result.entryCount}</div>
-                    <div style={{ fontSize: 11, color: "#888", marginTop: 2" }}>{result.transactionCount} transakcij</div>
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{result.transactionCount} transakcij</div>
                   </div>
                 </div>
 
