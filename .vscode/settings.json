@@ -1,0 +1,16 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^node -e \"const \\{ createClient \\} = require\\('@supabase/supabase-js'\\); const supabase = createClient\\('https://example\\.supabase\\.co', 'anon', \\{ auth: \\{ persistSession: false \\} \\}\\); console\\.log\\(Object\\.keys\\(supabase\\.auth\\)\\.filter\\(k => /getUser\\|session\\|cookie/i\\.test\\(k\\)\\)\\.join\\(', '\\)\\);\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^powershell -NoProfile -Command \"Invoke-WebRequest -Uri 'https://edavki\\.durs\\.si/Documents/Schemas/Doh_KDVP_9\\.xsd' -UseBasicParsing -OutFile '\\./lib/Doh_KDVP_9\\.xsd'; Invoke-WebRequest -Uri 'https://edavki\\.durs\\.si/Documents/Schemas/EDP-Common-1\\.xsd' -UseBasicParsing -OutFile '\\./lib/EDP-Common-1\\.xsd'\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cmd\\.exe /c curl\\.exe \"http://localhost:3001/api/reports/doh-kdvp/xml\\?year=2026&validate=1\" -i$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
