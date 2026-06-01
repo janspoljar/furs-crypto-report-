@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { FREE_TX_LIMIT } from "@/lib/subscription";
+import { FREE_TX_LIMIT } from "@/lib/constants";
 
 const BROKERS = [
   { value: "etoro", label: "eToro", icon: "🟢", note: "Account Statement CSV" },
