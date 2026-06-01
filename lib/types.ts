@@ -1,12 +1,10 @@
 export type BrokerType =
-  | "binance"
-  | "coinbase"
-  | "kraken"
   | "etoro"
   | "trading212"
   | "interactive-brokers"
   | "revolut"
   | "trade-republic"
+  | "n26"
   | "saxo"
   | "other";
 
@@ -14,15 +12,14 @@ export type AssetType =
   | "stock"
   | "etf"
   | "derivative"
-  | "dividend"
-  | "crypto";
+  | "dividend";
 
 export type TransactionType =
   | "buy"
   | "sell"
-  | "dividend"
+  | "staking"
   | "transfer"
-  | "swap";
+  | "fee";
 
 export interface Transaction {
   id: string;

@@ -6,6 +6,9 @@ const guides = [
   { href: "/navodila/trading212", label: "Trading212", icon: "🟠" },
   { href: "/navodila/revolut", label: "Revolut", icon: "🔷" },
   { href: "/navodila/interactive-brokers", label: "Interactive Brokers", icon: "🔵" },
+  { href: "/navodila/n26", label: "N26", icon: "🟤" },
+  { href: "/navodila/trade-republic", label: "Trade Republic", icon: "⚫" },
+  { href: "/navodila/saxo", label: "Saxo Bank", icon: "🔴" },
   { href: "/navodila/uvoz-edavki", label: "Uvoz na eDavke", icon: "📤" },
 ];
 

@@ -3,18 +3,19 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { FREE_TX_LIMIT } from "@/lib/constants";
+import { detectBrokerFromCsv } from "@/lib/parsers/detect";
+import type { BrokerType } from "@/lib/types";
 
-const BROKERS = [
-  { value: "etoro", label: "eToro", icon: "🟢", note: "Account Statement CSV" },
-  { value: "trading212", label: "Trading212", icon: "🟠", note: "Trade History CSV" },
-  { value: "revolut", label: "Revolut", icon: "🔷", note: "Trading CSV" },
-  { value: "interactive-brokers", label: "Interactive Brokers", icon: "🔵", note: "Activity Report CSV" },
-  { value: "trade-republic", label: "Trade Republic", icon: "⚫", note: "Kmalu podprto" },
-  { value: "saxo", label: "Saxo Bank", icon: "🔴", note: "Kmalu podprto" },
-  { value: "other", label: "Drugo", icon: "📄", note: "Splošni format" },
-] as const;
-
-type BrokerValue = (typeof BROKERS)[number]["value"];
+const BROKERS: { value: BrokerType; label: string; icon: string }[] = [
+  { value: "etoro", label: "eToro", icon: "🟢" },
+  { value: "trading212", label: "Trading212", icon: "🟠" },
+  { value: "revolut", label: "Revolut", icon: "🔷" },
+  { value: "interactive-brokers", label: "Interactive Brokers", icon: "🔵" },
+  { value: "trade-republic", label: "Trade Republic", icon: "⚫" },
+  { value: "n26", label: "N26", icon: "🟤" },
+  { value: "saxo", label: "Saxo Bank", icon: "🔴" },
+  { value: "other", label: "Drugo", icon: "📄" },
+];
 
 interface Props {
   isPro: boolean;
@@ -22,8 +23,10 @@ interface Props {
 }
 
 export default function UploadForm({ isPro, txCount }: Props) {
-  const [broker, setBroker] = useState<BrokerValue>("etoro");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [detectedBroker, setDetectedBroker] = useState<BrokerType | null>(null);
+  const [manualBroker, setManualBroker] = useState<BrokerType | null>(null);
+  const [showOverride, setShowOverride] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -32,21 +35,40 @@ export default function UploadForm({ isPro, txCount }: Props) {
   const [result, setResult] = useState<{ imported?: number; skipped?: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedBroker = BROKERS.find((b) => b.value === broker)!;
-  const txUsed = txCount;
-  const txRemaining = isPro ? Infinity : Math.max(0, FREE_TX_LIMIT - txUsed);
-  const usagePct = isPro ? 0 : Math.min(100, (txUsed / FREE_TX_LIMIT) * 100);
+  const activeBroker = manualBroker ?? detectedBroker;
+  const activeBrokerLabel = BROKERS.find((b) => b.value === activeBroker)?.label ?? "Neznana borza";
+  const txRemaining = isPro ? Infinity : Math.max(0, FREE_TX_LIMIT - txCount);
+  const usagePct = isPro ? 0 : Math.min(100, (txCount / FREE_TX_LIMIT) * 100);
+
+  async function handleFileSelect(file: File) {
+    setSelectedFile(file);
+    setDetectedBroker(null);
+    setManualBroker(null);
+    setShowOverride(false);
+    setSuccessMessage("");
+    setErrorMessage("");
+    setResult(null);
+
+    const text = await file.text();
+    const detection = detectBrokerFromCsv(text);
+    setDetectedBroker(detection.broker);
+  }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) setSelectedFile(file);
+    if (file) handleFileSelect(file);
   }
 
   async function handleUpload() {
     if (!selectedFile) {
       setErrorMessage("Izberi datoteko pred nalaganjem.");
+      return;
+    }
+    if (!activeBroker) {
+      setErrorMessage("Borza ni bila prepoznana. Izberi jo ročno spodaj.");
+      setShowOverride(true);
       return;
     }
     setLoading(true);
@@ -57,7 +79,7 @@ export default function UploadForm({ isPro, txCount }: Props) {
 
     try {
       const formData = new FormData();
-      formData.append("broker", broker);
+      formData.append("broker", activeBroker);
       formData.append("file", selectedFile);
 
       const res = await fetch("/api/upload", {
@@ -89,7 +111,7 @@ export default function UploadForm({ isPro, txCount }: Props) {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Uvoz transakcij</h1>
         <p className="mt-2 text-slate-500">
-          Naloži CSV datoteko iz svoje borze. Avtomatsko razberemo transakcije in jih pripravimo za FIFO izračun.
+          Povleci CSV datoteko — sistem samodejno prepozna borzo in uvozi transakcije.
         </p>
       </div>
 
@@ -98,7 +120,7 @@ export default function UploadForm({ isPro, txCount }: Props) {
         <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-slate-700">Porabljene transakcije (brezplačni plan)</span>
-            <span className="text-sm font-mono text-slate-600">{txUsed} / {FREE_TX_LIMIT}</span>
+            <span className="text-sm font-mono text-slate-600">{txCount} / {FREE_TX_LIMIT}</span>
           </div>
           <div className="w-full bg-slate-200 rounded-full h-2">
             <div
@@ -108,7 +130,7 @@ export default function UploadForm({ isPro, txCount }: Props) {
           </div>
           {txRemaining <= 20 && txRemaining > 0 && (
             <p className="text-xs text-amber-700 mt-2">
-              Ostane še {txRemaining} transakcij. <Link href="/#cenik" className="underline font-medium">Nadgradi na Pro za neomejene.</Link>
+              Ostane še {txRemaining} transakcij. <Link href="/#cenik" className="underline font-medium">Nadgradi na Pro.</Link>
             </p>
           )}
           {txRemaining === 0 && (
@@ -118,66 +140,106 @@ export default function UploadForm({ isPro, txCount }: Props) {
           )}
         </div>
       )}
-
       {isPro && (
         <div className="mb-6 flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium">
           <span>✓</span> Pro plan — neomejeno transakcij
         </div>
       )}
 
-      {/* Broker izbira */}
-      <section className="mb-6">
-        <label className="block text-sm font-semibold text-slate-700 mb-3">1. Izberi borzo</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {BROKERS.map((b) => (
-            <button
-              key={b.value}
-              type="button"
-              onClick={() => setBroker(b.value)}
-              className={`flex flex-col items-center p-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                broker === b.value
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
-              }`}
-            >
-              <span className="text-2xl mb-1">{b.icon}</span>
-              <span>{b.label}</span>
-              <span className="text-xs text-slate-400 mt-0.5 font-normal">{b.note}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* Drag & drop cona */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`cursor-pointer border-2 border-dashed rounded-2xl p-10 text-center transition-all mb-4 ${
+          dragging ? "border-blue-400 bg-blue-50"
+          : selectedFile ? "border-green-400 bg-green-50"
+          : "border-slate-300 bg-slate-50 hover:border-blue-300 hover:bg-blue-50"
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+        />
+        {selectedFile ? (
+          <>
+            <div className="text-4xl mb-3">📄</div>
+            <div className="font-semibold text-slate-800">{selectedFile.name}</div>
+            <div className="text-sm text-slate-500 mt-1">{(selectedFile.size / 1024).toFixed(1)} KB · Klikni za zamenjavo</div>
+          </>
+        ) : (
+          <>
+            <div className="text-4xl mb-3">⬆️</div>
+            <div className="font-semibold text-slate-700 text-lg">Povleci CSV sem ali klikni</div>
+            <div className="text-sm text-slate-500 mt-2">Podprto: eToro, Trading212, Revolut, IBKR, Trade Republic, N26, Saxo</div>
+          </>
+        )}
+      </div>
 
-      {/* Datoteka */}
-      <section className="mb-6">
-        <label className="block text-sm font-semibold text-slate-700 mb-3">2. Naloži CSV datoteko</label>
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-            dragging ? "border-blue-400 bg-blue-50"
-            : selectedFile ? "border-green-400 bg-green-50"
-            : "border-slate-300 bg-slate-50 hover:border-blue-300 hover:bg-blue-50"
-          }`}
-        >
-          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
-          {selectedFile ? (
-            <>
-              <div className="text-4xl mb-2">✅</div>
-              <div className="font-semibold text-green-700">{selectedFile.name}</div>
-              <div className="text-sm text-slate-500 mt-1">{(selectedFile.size / 1024).toFixed(1)} KB · Klikni za zamenjavo</div>
-            </>
+      {/* Prepoznana borza */}
+      {selectedFile && (
+        <div className="mb-5 p-4 rounded-xl border border-slate-200 bg-white">
+          {activeBroker ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-semibold text-slate-700">Prepoznana borza:</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-800 rounded-full font-semibold text-xs">
+                  {BROKERS.find(b => b.value === activeBroker)?.icon} {activeBrokerLabel}
+                  {manualBroker && <span className="text-green-600 ml-1">(ročno)</span>}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOverride(!showOverride)}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                {showOverride ? "Skrij" : "Ni prav?"}
+              </button>
+            </div>
           ) : (
-            <>
-              <div className="text-4xl mb-2">📁</div>
-              <div className="font-semibold text-slate-700">Povleci CSV sem ali klikni</div>
-              <div className="text-sm text-slate-500 mt-1">{selectedBroker.label} — {selectedBroker.note}</div>
-            </>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm text-amber-700">
+                <span>⚠️</span>
+                <span>Borza ni bila samodejno prepoznana. Izberi jo ročno.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOverride(true)}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Izberi borzo
+              </button>
+            </div>
+          )}
+
+          {/* Ročni override */}
+          {showOverride && (
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <p className="text-xs text-slate-500 mb-2">Izberi borzo ročno:</p>
+              <div className="flex flex-wrap gap-2">
+                {BROKERS.map((b) => (
+                  <button
+                    key={b.value}
+                    type="button"
+                    onClick={() => { setManualBroker(b.value); setShowOverride(false); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      activeBroker === b.value
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
+                    }`}
+                  >
+                    {b.icon} {b.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-      </section>
+      )}
 
       {/* Gumb */}
       <button
@@ -186,10 +248,9 @@ export default function UploadForm({ isPro, txCount }: Props) {
         disabled={loading || !selectedFile || (!isPro && txRemaining === 0)}
         className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-xl text-base transition-colors"
       >
-        {loading ? "Uvažam transakcije…" : `Uvozi iz ${selectedBroker.label}`}
+        {loading ? "Uvažam transakcije…" : activeBroker ? `Uvozi iz ${activeBrokerLabel}` : "Uvozi transakcije"}
       </button>
 
-      {/* Upgrade required */}
       {upgradeRequired && (
         <div className="mt-6 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 text-center">
           <div className="text-4xl mb-3">🔒</div>
@@ -226,34 +287,26 @@ export default function UploadForm({ isPro, txCount }: Props) {
         </div>
       )}
 
-      {/* Navodila */}
-      <section className="mt-10 p-5 bg-slate-50 border border-slate-200 rounded-xl">
-        <h3 className="font-semibold text-slate-800 mb-3">Kako pridobiti CSV iz {selectedBroker.label}?</h3>
-        <BrokerInstructions broker={broker} />
+      {/* Navodila za izvoz */}
+      <section className="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+        <h3 className="font-semibold text-slate-800 mb-1">Kako pridobiti CSV?</h3>
+        <p className="text-sm text-slate-500 mb-4">Podrobna navodila za vsako borzo posebej:</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { href: "/navodila/etoro", label: "eToro", icon: "🟢" },
+            { href: "/navodila/trading212", label: "Trading212", icon: "🟠" },
+            { href: "/navodila/revolut", label: "Revolut", icon: "🔷" },
+            { href: "/navodila/interactive-brokers", label: "IBKR", icon: "🔵" },
+            { href: "/navodila/trade-republic", label: "Trade Republic", icon: "⚫" },
+            { href: "/navodila/n26", label: "N26", icon: "🟤" },
+            { href: "/navodila/uvoz-edavki", label: "Uvoz na eDavke", icon: "📤" },
+          ].map((g) => (
+            <Link key={g.href} href={g.href} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-blue-300 text-sm text-slate-700 font-medium no-underline transition-colors">
+              {g.icon} {g.label}
+            </Link>
+          ))}
+        </div>
       </section>
     </main>
-  );
-}
-
-function BrokerInstructions({ broker }: { broker: BrokerValue }) {
-  const instructions: Record<BrokerValue, string[]> = {
-    etoro: ["Pojdi na eToro → Portfolio → History", "Klikni 'Export' zgoraj desno", "Izberi 'Account Statement' in nastavi davčno leto", "Prenesi Excel, ga shrani kot CSV"],
-    trading212: ["Pojdi na Trading212 → History (ikona ure)", "Klikni 'Export' zgoraj desno", "Izberi 'Trade History' in nastavi datumski obseg", "Prenesi CSV"],
-    revolut: ["Odpri Revolut → Profile → Documents", "Izberi 'Trading account statements'", "Nastavi datum za davčno leto in izberi CSV", "CSV bo poslan na email"],
-    "interactive-brokers": ["Pojdi na IBKR → Reports → Flex Queries", "Ustvari Activity Report za davčno leto", "Izberi CSV format in prenesi"],
-    "trade-republic": ["Podpora za Trade Republic prihaja kmalu."],
-    saxo: ["Podpora za Saxo Bank prihaja kmalu."],
-    other: ["Za nestandardne formate se obrnite na podporo."],
-  };
-
-  return (
-    <ol className="space-y-2">
-      {instructions[broker].map((step, i) => (
-        <li key={i} className="flex gap-3 text-sm text-slate-600">
-          <span className="font-bold text-blue-600 shrink-0">{i + 1}.</span>
-          {step}
-        </li>
-      ))}
-    </ol>
   );
 }

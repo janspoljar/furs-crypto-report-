@@ -472,11 +472,11 @@ export async function POST(req: Request) {
 
     const dbRows = rowsToInsert.map((row) => {
       // Determine asset_type based on transaction type
-      let assetType = "crypto"; // default for Trading212
-      if (row.type === "transfer") {
-        assetType = "cash";
-      } else if (row.type === "staking") {
-        assetType = "reward";
+      let assetType = "stock"; // default
+      if (row.type === "staking") {
+        assetType = "dividend";
+      } else if (row.type === "transfer" || row.type === "fee") {
+        assetType = "stock"; // neutral — keep as stock
       }
 
       return {

@@ -1,46 +1,14 @@
 import Link from "next/link";
 
 const brokerGuides = [
-  {
-    href: "/navodila/etoro",
-    name: "eToro",
-    icon: "🟢",
-    description: "Izvozi Account Statement kot Excel in ga uvozi v naš sistem.",
-    time: "~3 min",
-    status: "Podprto",
-  },
-  {
-    href: "/navodila/trading212",
-    name: "Trading212",
-    icon: "🟠",
-    description: "Prenesi Trade History CSV iz aplikacije ali spletne strani.",
-    time: "~2 min",
-    status: "Podprto",
-  },
-  {
-    href: "/navodila/revolut",
-    name: "Revolut",
-    icon: "🔷",
-    description: "Izvozi Trading Account Statement iz aplikacije.",
-    time: "~2 min",
-    status: "Podprto",
-  },
-  {
-    href: "/navodila/interactive-brokers",
-    name: "Interactive Brokers",
-    icon: "🔵",
-    description: "Ustvari Activity Report v Flex Query formatu.",
-    time: "~5 min",
-    status: "Podprto",
-  },
-  {
-    href: "/navodila/uvoz-edavki",
-    name: "Uvoz XML na eDavke",
-    icon: "📤",
-    description: "Ko imaš XML, ga uvozi na portal eDavke v 3 korakih.",
-    time: "~2 min",
-    status: "Vodič",
-  },
+  { href: "/navodila/etoro", name: "eToro", icon: "🟢", description: "Izvozi Account Statement kot Excel in ga uvozi v naš sistem.", time: "~3 min", status: "Podprto" },
+  { href: "/navodila/trading212", name: "Trading212", icon: "🟠", description: "Prenesi Trade History CSV iz aplikacije ali spletne strani.", time: "~2 min", status: "Podprto" },
+  { href: "/navodila/revolut", name: "Revolut", icon: "🔷", description: "Izvozi Trading Account Statement iz aplikacije.", time: "~2 min", status: "Podprto" },
+  { href: "/navodila/interactive-brokers", name: "Interactive Brokers", icon: "🔵", description: "Ustvari Activity Report v Flex Query formatu.", time: "~5 min", status: "Podprto" },
+  { href: "/navodila/n26", name: "N26", icon: "🟤", description: "Izvozi transakcijsko zgodovino iz N26 Stocks.", time: "~2 min", status: "Podprto" },
+  { href: "/navodila/trade-republic", name: "Trade Republic", icon: "⚫", description: "Podpora v razvoju — vmesna navodila so na voljo.", time: "~2 min", status: "Kmalu" },
+  { href: "/navodila/saxo", name: "Saxo Bank", icon: "🔴", description: "Podpora v razvoju — vmesna navodila so na voljo.", time: "~2 min", status: "Kmalu" },
+  { href: "/navodila/uvoz-edavki", name: "Uvoz XML na eDavke", icon: "📤", description: "Ko imaš XML, ga uvozi na portal eDavke v 3 korakih.", time: "~2 min", status: "Vodič" },
 ];
 
 export default function NavodilaPage() {
