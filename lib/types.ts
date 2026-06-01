@@ -1,4 +1,7 @@
 export type BrokerType =
+  | "binance"
+  | "coinbase"
+  | "kraken"
   | "etoro"
   | "trading212"
   | "interactive-brokers"

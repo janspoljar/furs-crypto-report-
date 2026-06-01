@@ -12,6 +12,15 @@ export async function parseCsvByBroker(
     case "etoro":
       return parseEtoroCsv(csvText);
 
+    case "binance":
+      return parseBinanceCsv(csvText);
+
+    case "coinbase":
+      return parseCoinbaseCsv(csvText);
+
+    case "kraken":
+      return parseKrakenCsv(csvText);
+
     case "trading212":
     case "interactive-brokers":
     case "revolut":

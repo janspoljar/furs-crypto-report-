@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Davčno poročanje kripto — Slovenija",
-  description: "MVP za kripto davčno poročanje za Slovenijo",
+  title: "KriptoDavki.si — Kripto davčno poročanje za Slovenijo",
+  description: "Naloži CSV iz Binance, eToro, Coinbase ali Kraken. Avtomatski FIFO izračun in DOH-KDVP XML za eDavke.",
 };
 
 export default async function RootLayout({
@@ -36,28 +36,58 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header style={{ padding: 12, borderBottom: "1px solid #eee" }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <a href="/" style={{ fontWeight: 700, fontSize: 18, textDecoration: "none", color: "inherit" }}>
-                Kripto Davki 🇸🇮
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-6">
+              <a href="/" className="flex items-center gap-2 font-bold text-lg text-blue-700 hover:text-blue-600 transition-colors no-underline">
+                <span className="text-2xl">🇸🇮</span>
+                <span>KriptoDavki</span>
               </a>
-              <nav style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <a href="/dashboard" style={{ color: "#333", textDecoration: "none" }}>Nadzorna plošča</a>
-                <a href="/upload" style={{ color: "#333", textDecoration: "none" }}>Uvoz CSV</a>
-                <a href="/transactions" style={{ color: "#333", textDecoration: "none" }}>Transakcije</a>
-                <a href="/reports" style={{ color: "#333", textDecoration: "none" }}>Poročila</a>
-                <a href="/profile" style={{ color: "#333", textDecoration: "none" }}>Profil</a>
-              </nav>
+              {initialUser && (
+                <nav className="hidden sm:flex items-center gap-1">
+                  <NavLink href="/dashboard">Nadzorna plošča</NavLink>
+                  <NavLink href="/upload">Uvoz CSV</NavLink>
+                  <NavLink href="/transactions">Transakcije</NavLink>
+                  <NavLink href="/reports">Poročila</NavLink>
+                </nav>
+              )}
             </div>
-            <div>
-              {/* @ts-expect-error server -> client prop */}
+            <div className="flex items-center gap-3">
+              {!initialUser && (
+                <>
+                  <a href="/#cenik" className="hidden sm:block text-sm text-slate-600 hover:text-blue-700 font-medium transition-colors">
+                    Cenik
+                  </a>
+                  <a href="/login" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                    Prijava / Registracija
+                  </a>
+                </>
+              )}
               <UserNav initialUser={initialUser} />
             </div>
           </div>
         </header>
-        {children}
+        <div className="flex-1">
+          {children}
+        </div>
+        <footer className="border-t border-slate-200 bg-slate-50 py-6">
+          <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-slate-500">
+            <span>© 2025 KriptoDavki.si — Kripto davčno poročanje za Slovenijo</span>
+            <span>Ni davčni nasvet. Preverite z računovodjem.</span>
+          </div>
+        </footer>
       </body>
     </html>
+  );
+}
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="px-3 py-1.5 text-sm text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded-md font-medium transition-colors no-underline"
+    >
+      {children}
+    </a>
   );
 }

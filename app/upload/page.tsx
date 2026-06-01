@@ -1,128 +1,251 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+
+const BROKERS = [
+  { value: "binance", label: "Binance", icon: "🟡", note: "Trade History CSV" },
+  { value: "etoro", label: "eToro", icon: "🟢", note: "Account Statement CSV" },
+  { value: "coinbase", label: "Coinbase", icon: "🔵", note: "Transaction Report CSV" },
+  { value: "kraken", label: "Kraken", icon: "🟣", note: "Ledgers CSV" },
+  { value: "trading212", label: "Trading212", icon: "🟠", note: "Kmalu podprto" },
+  { value: "trade-republic", label: "Trade Republic", icon: "⚫", note: "Kmalu podprto" },
+  { value: "revolut", label: "Revolut", icon: "🔷", note: "Kmalu podprto" },
+  { value: "other", label: "Drugo", icon: "📄", note: "Splošni format" },
+] as const;
+
+type BrokerValue = (typeof BROKERS)[number]["value"];
 
 export default function UploadPage() {
-  const [broker, setBroker] = useState("trading212");
+  const [broker, setBroker] = useState<BrokerValue>("binance");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [result, setResult] = useState<string>("");
+  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [result, setResult] = useState<{ imported?: number; skipped?: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedBroker = BROKERS.find((b) => b.value === broker)!;
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setSelectedFile(file);
+  }
 
   async function handleUpload() {
-  if (!selectedFile) {
-    setErrorMessage("Izberi datoteko pred nalaganjem.");
-    return;
-  }
-
-  setLoading(true);
-  setSuccessMessage("");
-  setErrorMessage("");
-  setResult("");
-
-  try {
-    const formData = new FormData();
-    formData.append("broker", broker);
-    formData.append("file", selectedFile);
-
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || res.statusText || "Upload failed");
+    if (!selectedFile) {
+      setErrorMessage("Izberi datoteko pred nalaganjem.");
+      return;
     }
 
-    setSuccessMessage("Upload je bil uspešen.");
-    setResult(JSON.stringify(data, null, 2));
-  } catch (error: any) {
-    setErrorMessage(error?.message ?? "Napaka pri nalaganju.");
-  } finally {
-    setLoading(false);
+    setLoading(true);
+    setSuccessMessage("");
+    setErrorMessage("");
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("broker", broker);
+      formData.append("file", selectedFile);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || res.statusText || "Upload ni uspel");
+      }
+
+      setSuccessMessage(
+        `Uspešno uvoženo ${data?.imported ?? data?.count ?? "?"} transakcij.`
+      );
+      setResult(data);
+    } catch (error: unknown) {
+      setErrorMessage(error instanceof Error ? error.message : "Napaka pri nalaganju.");
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold">Upload broker CSV</h1>
-      <p className="mt-4 text-slate-600">
-        Naloži CSV datoteko in pripravi transakcije za FIFO obdelavo.
-      </p>
-
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Broker
-        </label>
-        <select
-          className="rounded border px-3 py-2 w-full"
-          value={broker}
-          onChange={(e) => setBroker(e.target.value)}
-        >
-          <option value="trading212">Trading212</option>
-          <option value="trade-republic">Trade Republic</option>
-          <option value="revolut">Revolut</option>
-          <option value="etoro">eToro</option>
-        </select>
-        <p className="mt-2 text-sm text-slate-500">
-          Recommended: Trading212 and Trade Republic
+    <main className="max-w-3xl mx-auto px-4 py-10">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900">Uvoz transakcij</h1>
+        <p className="mt-2 text-slate-500">
+          Naloži CSV datoteko iz svoje borze. Avtomatsko razberemo transakcije in jih pripravimo za FIFO izračun.
         </p>
       </div>
 
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          CSV datoteka
+      {/* Broker izbira */}
+      <section className="mb-6">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
+          1. Izberi borzo
         </label>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            setSelectedFile(file ?? null);
-          }}
-          className="w-full"
-        />
-      </div>
-
-      <div className="mt-4">
-        <button
-          type="button"
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60"
-          onClick={handleUpload}
-          disabled={loading || !selectedFile}
-        >
-          {loading ? "Uploading..." : "Upload CSV"}
-        </button>
-      </div>
-
-      {selectedFile && (
-        <div className="mt-3 text-sm text-slate-600">
-          Izbrana datoteka: {selectedFile.name}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {BROKERS.map((b) => (
+            <button
+              key={b.value}
+              type="button"
+              onClick={() => setBroker(b.value)}
+              className={`flex flex-col items-center p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                broker === b.value
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
+              }`}
+            >
+              <span className="text-2xl mb-1">{b.icon}</span>
+              <span>{b.label}</span>
+              <span className="text-xs text-slate-400 mt-0.5 font-normal">{b.note}</span>
+            </button>
+          ))}
         </div>
-      )}
+      </section>
+
+      {/* Datoteka */}
+      <section className="mb-6">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
+          2. Naloži CSV datoteko
+        </label>
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+            dragging
+              ? "border-blue-400 bg-blue-50"
+              : selectedFile
+              ? "border-green-400 bg-green-50"
+              : "border-slate-300 bg-slate-50 hover:border-blue-300 hover:bg-blue-50"
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+          />
+          {selectedFile ? (
+            <>
+              <div className="text-4xl mb-2">✅</div>
+              <div className="font-semibold text-green-700">{selectedFile.name}</div>
+              <div className="text-sm text-slate-500 mt-1">
+                {(selectedFile.size / 1024).toFixed(1)} KB · Klikni za zamenjavo
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-4xl mb-2">📁</div>
+              <div className="font-semibold text-slate-700">Povleci CSV sem ali klikni</div>
+              <div className="text-sm text-slate-500 mt-1">
+                {selectedBroker.label} — {selectedBroker.note}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Gumb */}
+      <button
+        type="button"
+        onClick={handleUpload}
+        disabled={loading || !selectedFile}
+        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-xl text-base transition-colors"
+      >
+        {loading ? "Uvažam transakcije…" : `Uvozi iz ${selectedBroker.label}`}
+      </button>
 
       {successMessage && (
-        <div className="mt-4 rounded border border-green-200 bg-green-50 p-3 text-green-800">
-          {successMessage}
+        <div className="mt-6 flex items-start gap-3 p-4 rounded-xl border border-green-200 bg-green-50 text-green-800">
+          <span className="text-xl">✅</span>
+          <div>
+            <div className="font-semibold">{successMessage}</div>
+            {result?.skipped != null && result.skipped > 0 && (
+              <div className="text-sm mt-1 text-green-700">Preskočenih (duplikati): {result.skipped}</div>
+            )}
+            <a href="/dashboard" className="text-sm underline text-green-700 mt-1 inline-block">
+              Pojdi na nadzorno ploščo →
+            </a>
+          </div>
         </div>
       )}
 
       {errorMessage && (
-        <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-red-800">
-          {errorMessage}
+        <div className="mt-6 flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50 text-red-800">
+          <span className="text-xl">❌</span>
+          <div>
+            <div className="font-semibold">Napaka pri uvozu</div>
+            <div className="text-sm mt-1">{errorMessage}</div>
+          </div>
         </div>
       )}
 
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-3">Rezultat</h2>
-        <pre className="overflow-x-auto rounded bg-slate-100 p-4 text-sm whitespace-pre-wrap">
-          {result || "Še ni rezultata."}
-        </pre>
-      </div>
+      {/* Navodila */}
+      <section className="mt-10 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+        <h3 className="font-semibold text-slate-800 mb-3">Kako pridobiti CSV iz {selectedBroker.label}?</h3>
+        <BrokerInstructions broker={broker} />
+      </section>
     </main>
+  );
+}
+
+function BrokerInstructions({ broker }: { broker: BrokerValue }) {
+  const instructions: Record<BrokerValue, { steps: string[] }> = {
+    binance: {
+      steps: [
+        "Pojdite na Binance → Wallet → Transaction History",
+        "Kliknite 'Generate All Statements'",
+        "Izberite časovno obdobje in potrdite",
+        "Prenesite generirani CSV",
+      ],
+    },
+    etoro: {
+      steps: [
+        "Pojdite na eToro → Portfelj → Zgodovina",
+        "Kliknite 'Izvozi' v zgornjem desnem kotu",
+        "Izberite 'Account Statement'",
+        "Prenesite Excel in ga shranite kot CSV",
+      ],
+    },
+    coinbase: {
+      steps: [
+        "Pojdite na Coinbase → Profil → Izjave",
+        "Izberite 'Transaction history'",
+        "Kliknite 'Generate report' in izberite CSV",
+        "Prenesite datoteko",
+      ],
+    },
+    kraken: {
+      steps: [
+        "Pojdite na Kraken → History → Ledgers",
+        "Kliknite 'Export' in izberite CSV",
+        "Izberite časovno obdobje",
+        "Prenesite datoteko",
+      ],
+    },
+    trading212: { steps: ["Podpora za Trading212 prihaja kmalu. Prosimo počakajte."] },
+    "trade-republic": { steps: ["Podpora za Trade Republic prihaja kmalu. Prosimo počakajte."] },
+    revolut: { steps: ["Podpora za Revolut prihaja kmalu. Prosimo počakajte."] },
+    other: { steps: ["Za nestandardne formate se obrnite na podporo."] },
+  };
+
+  const { steps } = instructions[broker] ?? { steps: [] };
+
+  return (
+    <ol className="space-y-2">
+      {steps.map((step, i) => (
+        <li key={i} className="flex gap-3 text-sm text-slate-600">
+          <span className="font-bold text-blue-600 shrink-0">{i + 1}.</span>
+          {step}
+        </li>
+      ))}
+    </ol>
   );
 }
