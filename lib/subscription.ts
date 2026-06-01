@@ -13,7 +13,7 @@ export interface UserSubscription {
 export async function getUserSubscription(userId: string): Promise<UserSubscription> {
   const { data } = await supabaseAdmin
     .from("subscriptions")
-    .select("plan, valid_until")
+    .select("plan, valid_until, paid_override")
     .eq("user_id", userId)
     .single();
 
@@ -22,10 +22,18 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   }
 
   const validUntil = data.valid_until ? new Date(data.valid_until) : null;
-  const isActive = data.plan === "free" || (validUntil !== null && validUntil > new Date());
+
+  // Pro is active when:
+  // 1. paid_override is true (manual admin grant — always active regardless of valid_until)
+  // 2. valid_until is null (lifetime / no expiry set)
+  // 3. valid_until is in the future
+  const isProPlan = data.plan === "pro";
+  const isActive =
+    data.plan === "free" ||
+    (isProPlan && (data.paid_override === true || validUntil === null || validUntil > new Date()));
 
   return {
-    plan: isActive ? (data.plan as Plan) : "free",
+    plan: isActive && isProPlan ? "pro" : "free",
     validUntil,
     isActive,
   };
