@@ -412,13 +412,12 @@ export function serializeDohKdvpDraftToXml(draft: DohKdvpDraft): XmlSerializeRes
     }
     xml += "    </edp:taxpayer>\n";
     xml += "  </edp:Header>\n";
-    // Add minimal signatures block to satisfy schema requirements (NonEDP receipt in EDP namespace)
     xml += "  <edp:Signatures>\n";
     xml += "    <edp:NonEDP>\n";
-    xml += "      <receipt>\n";
-    xml += `        <timestamp>${new Date().toISOString()}</timestamp>\n`;
-    xml += "        <documentNumber>0</documentNumber>\n";
-    xml += "      </receipt>\n";
+    xml += "      <edp:receipt>\n";
+    xml += `        <edp:timestamp>${new Date().toISOString()}</edp:timestamp>\n`;
+    xml += "        <edp:documentNumber>0</edp:documentNumber>\n";
+    xml += "      </edp:receipt>\n";
     xml += "    </edp:NonEDP>\n";
     xml += "  </edp:Signatures>\n";
     xml += "  <body>\n";
@@ -442,36 +441,35 @@ export function serializeDohKdvpDraftToXml(draft: DohKdvpDraft): XmlSerializeRes
         continue;
       }
 
-      xml += "  <KDVPItem>\n";
-      xml += `    <ItemID>${itemIndex++}</ItemID>\n`;
-      xml += `    <InventoryListType>${inventoryType}</InventoryListType>\n`;
-      xml += `    <Name>${escapeXml(instr.asset)}</Name>\n`;
-      xml += "    <Securities>\n";
+      xml += "      <KDVPItem>\n";
+      xml += `        <ItemID>${itemIndex++}</ItemID>\n`;
+      xml += `        <InventoryListType>${inventoryType}</InventoryListType>\n`;
+      xml += `        <Name>${escapeXml(instr.asset)}</Name>\n`;
+      xml += "        <Securities>\n";
       if (instr.isin) {
-        xml += `      <ISIN>${escapeXml(instr.isin)}</ISIN>\n`;
+        xml += `          <ISIN>${escapeXml(instr.isin)}</ISIN>\n`;
       }
       if (instr.ticker) {
-        xml += `      <Code>${escapeXml(instr.ticker)}</Code>\n`;
+        xml += `          <Code>${escapeXml(instr.ticker)}</Code>\n`;
       }
-      // Ensure Securities contains a Name element (helps uniqueness and schema expectations)
-      xml += `      <Name>${escapeXml(instr.asset)}</Name>\n`;
-      xml += "      <IsFond>false</IsFond>\n";
+      xml += `          <Name>${escapeXml(instr.asset)}</Name>\n`;
+      xml += "          <IsFond>false</IsFond>\n";
 
       let rowIndex = 1;
       if (instr.acquisitions) {
         for (const acq of instr.acquisitions) {
-          xml += "      <Row>\n";
-          xml += `        <ID>${rowIndex++}</ID>\n`;
-          xml += "        <Purchase>\n";
-          xml += `          <F1>${formatDate(acq.date)}</F1>\n`;
-          xml += "          <F2>B</F2>\n";
-          xml += `          <F3>${acq.quantity.toFixed(8)}</F3>\n`;
-          xml += `          <F4>${acq.costPerUnit.toFixed(8)}</F4>\n`;
+          xml += "          <Row>\n";
+          xml += `            <ID>${rowIndex++}</ID>\n`;
+          xml += "            <Purchase>\n";
+          xml += `              <F1>${formatDate(acq.date)}</F1>\n`;
+          xml += "              <F2>B</F2>\n";
+          xml += `              <F3>${acq.quantity.toFixed(8)}</F3>\n`;
+          xml += `              <F4>${acq.costPerUnit.toFixed(8)}</F4>\n`;
           if (acq.fee !== undefined && acq.fee > 0) {
-            xml += `          <F5>${acq.fee.toFixed(4)}</F5>\n`;
+            xml += `              <F5>${acq.fee.toFixed(4)}</F5>\n`;
           }
-          xml += "        </Purchase>\n";
-          xml += "      </Row>\n";
+          xml += "            </Purchase>\n";
+          xml += "          </Row>\n";
         }
       }
 
@@ -481,19 +479,19 @@ export function serializeDohKdvpDraftToXml(draft: DohKdvpDraft): XmlSerializeRes
             continue;
           }
           const unitValue = disp.grossProceeds / disp.quantity;
-          xml += "      <Row>\n";
-          xml += `        <ID>${rowIndex++}</ID>\n`;
-          xml += "        <Sale>\n";
-          xml += `          <F6>${formatDate(disp.date)}</F6>\n`;
-          xml += `          <F7>${disp.quantity.toFixed(8)}</F7>\n`;
-          xml += `          <F9>${unitValue.toFixed(8)}</F9>\n`;
-          xml += "        </Sale>\n";
-          xml += "      </Row>\n";
+          xml += "          <Row>\n";
+          xml += `            <ID>${rowIndex++}</ID>\n`;
+          xml += "            <Sale>\n";
+          xml += `              <F6>${formatDate(disp.date)}</F6>\n`;
+          xml += `              <F7>${disp.quantity.toFixed(8)}</F7>\n`;
+          xml += `              <F9>${unitValue.toFixed(8)}</F9>\n`;
+          xml += "            </Sale>\n";
+          xml += "          </Row>\n";
         }
       }
 
-      xml += "    </Securities>\n";
-      xml += "  </KDVPItem>\n";
+      xml += "        </Securities>\n";
+      xml += "      </KDVPItem>\n";
     }
 
     xml += "    </Doh_KDVP>\n";
