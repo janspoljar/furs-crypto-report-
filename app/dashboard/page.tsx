@@ -2,6 +2,7 @@ import { getUserFromServer } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getFifoForUser } from "@/lib/fifo-server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getUserSubscription, FREE_TX_LIMIT } from "@/lib/subscription";
 
 export default async function DashboardPage() {
   const { user, error } = await getUserFromServer();
@@ -13,10 +14,15 @@ export default async function DashboardPage() {
   // Poberi realne podatke
   const { fifo } = await getFifoForUser(user.id);
 
-  const { count: txCount } = await supabaseAdmin
-    .from("transactions")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+  const [{ count: txCount }, subscription] = await Promise.all([
+    supabaseAdmin
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    getUserSubscription(user.id),
+  ]);
+
+  const isPro = subscription.plan === "pro" && subscription.isActive;
 
   const { data: lastTxRow } = await supabaseAdmin
     .from("transactions")
@@ -42,9 +48,25 @@ export default async function DashboardPage() {
 
   return (
     <main style={{ maxWidth: 960, margin: "40px auto", padding: 16 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ marginBottom: 4 }}>Nadzorna plošča</h1>
-        <p style={{ color: "#666" }}>Prijavljen kot: <strong>{user.email || user.id}</strong></p>
+      <div style={{ marginBottom: 28, display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <h1 style={{ marginBottom: 4 }}>Nadzorna plošča</h1>
+          <p style={{ color: "#666" }}>Prijavljen kot: <strong>{user.email || user.id}</strong></p>
+        </div>
+        {isPro ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, backgroundColor: "#dcfce7", color: "#166534", border: "1px solid #86efac", borderRadius: 20, padding: "4px 12px", fontSize: 13, fontWeight: 600 }}>
+            ✓ Pro plan
+          </span>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d", borderRadius: 20, padding: "4px 12px", fontSize: 13, fontWeight: 500 }}>
+              Brezplačni plan · {txCount ?? 0}/{FREE_TX_LIMIT} tx
+            </div>
+            <a href="/#cenik" style={{ backgroundColor: "#2563eb", color: "white", borderRadius: 8, padding: "5px 12px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+              Nadgradi
+            </a>
+          </div>
+        )}
       </div>
 
       {/* KPI kartica vrstica */}

@@ -4,7 +4,9 @@ import { getFifoForUser } from "@/lib/fifo-server";
 import TaxpayerProfileStatus from "@/components/taxpayer-profile-status";
 import DohKdvpExportForm from "@/components/doh-kdvp-export-form";
 import DohDivExportForm from "@/components/doh-div-export-form";
+import UpgradePrompt from "@/components/upgrade-prompt";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getUserSubscription, getUserTransactionCount, FREE_TX_LIMIT } from "@/lib/subscription";
 
 interface ReportsPageProps {
   searchParams: Promise<{ year?: string; debug?: string }>;
@@ -37,7 +39,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const yearFilter = params.year ?? "";
   const debugMode = params.debug === "1";
 
-  const { fifo } = await getFifoForUser(user.id);
+  const [{ fifo }, subscription, txCount] = await Promise.all([
+    getFifoForUser(user.id),
+    getUserSubscription(user.id),
+    getUserTransactionCount(user.id),
+  ]);
+  const isPro = subscription.plan === "pro" && subscription.isActive;
 
   const sellYears = Array.from(
     new Set(fifo.sales.map((sale) => sale.date.getFullYear()))
@@ -173,13 +180,53 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </table>
       </section>
 
+      {/* Freemium status bar */}
+      {!isPro && (
+        <div className="mb-6 flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <span className="text-amber-500 text-xl shrink-0">⚡</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">Brezplačni plan</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              {txCount} / {FREE_TX_LIMIT} transakcij · XML izvoz zaklenjen
+            </p>
+          </div>
+          <a
+            href="/#cenik"
+            className="shrink-0 bg-amber-500 hover:bg-amber-400 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+          >
+            Nadgradi na Pro
+          </a>
+        </div>
+      )}
+
       <TaxpayerProfileStatus userId={user.id} />
 
-      <DohKdvpExportForm availableYears={sellYears} />
+      {isPro ? (
+        <DohKdvpExportForm availableYears={sellYears} />
+      ) : (
+        <div className="mt-6">
+          <h2 className="text-xl font-bold mb-4">DOH-KDVP XML izvoz</h2>
+          <UpgradePrompt
+            title="XML izvoz zahteva Pro plan"
+            description={`Izvoz DOH-KDVP XML datoteke za eDavke je na voljo samo za Pro naročnike. Nadgradite za 19 €/leto in prejmite XML za vsa davčna leta.`}
+          />
+        </div>
+      )}
 
       {/* DOH-DIV */}
       <section style={{ marginTop: 48, paddingTop: 32, borderTop: "2px solid #e5e7eb" }}>
-        <DohDivExportForm availableYears={divYears} />
+        {isPro ? (
+          <DohDivExportForm availableYears={divYears} />
+        ) : (
+          <div>
+            <h2 className="text-xl font-bold mb-4">DOH-DIV (Staking / Dividende)</h2>
+            <UpgradePrompt
+              title="DOH-DIV izvoz zahteva Pro plan"
+              description="Izvoz za staking nagrade in dividende je na voljo samo za Pro naročnike."
+              compact
+            />
+          </div>
+        )}
       </section>
 
       {debugMode && (

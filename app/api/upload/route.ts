@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/supabase/route-handler";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { canUploadTransactions, FREE_TX_LIMIT } from "@/lib/subscription";
 
 const DATE_KEYS = ["date", "time", "created at", "timestamp"];
 const TYPE_KEYS = ["type", "action", "side"];
@@ -449,6 +450,25 @@ export async function POST(req: Request) {
       (row) => !existingImportKeys.has(row.importKey)
     );
     duplicateCount = insertableRowsWithKey.length - rowsToInsert.length;
+
+    // Freemium gate: check transaction count limit for free plan
+    const uploadAccess = await canUploadTransactions(userId, rowsToInsert.length);
+    if (!uploadAccess.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Brezplačni plan je omejen na " + FREE_TX_LIMIT + " transakcij.",
+          upgradeRequired: true,
+          currentCount: uploadAccess.currentCount,
+          remaining: uploadAccess.remaining,
+          message:
+            `Dosegili ste omejitev brezplačnega plana (${FREE_TX_LIMIT} transakcij). ` +
+            `Trenutno imate ${uploadAccess.currentCount} transakcij. ` +
+            `Nadgradite na Pro za neomejene transakcije.`,
+        },
+        { status: 403 }
+      );
+    }
 
     const dbRows = rowsToInsert.map((row) => {
       // Determine asset_type based on transaction type

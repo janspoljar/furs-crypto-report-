@@ -5,6 +5,7 @@ import { buildExportFromFifo } from "@/lib/report-exporter";
 // `doh-kdvp` is imported dynamically below to avoid native module
 // loading (libxmljs2) during top-level module evaluation.
 import { getTaxpayerProfile } from "@/lib/supabase/profile";
+import { canExportXml } from "@/lib/subscription";
 
 function jsonErrorResponse(error: string, details?: unknown, status = 500, failedAt?: string) {
   const payload: Record<string, unknown> = { success: false, error, status };
@@ -42,6 +43,20 @@ export async function GET(request: Request) {
 
     const { user } = await getAuthenticatedUser();
     const year = yearParam ? Number(yearParam) : undefined;
+
+    // Freemium gate: XML export requires Pro plan
+    const xmlAccess = await canExportXml(user!.id);
+    if (!xmlAccess.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Pro plan required",
+          upgradeRequired: true,
+          message: "Izvoz XML datoteke je na voljo samo za Pro naročnike. Nadgradite na Pro za 19 €/leto.",
+        },
+        { status: 403 }
+      );
+    }
 
     let fifo, transactions, profile, exportModel, draft, validation;
 
