@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FURS Crypto Report",
+  title: "Davčno poročanje kripto — Slovenija",
   description: "MVP za kripto davčno poročanje za Slovenijo",
 };
 
@@ -40,13 +40,13 @@ export default async function RootLayout({
           <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <a href="/" style={{ fontWeight: 700, fontSize: 18, textDecoration: "none", color: "inherit" }}>
-                FURS Crypto Report
+                Kripto Davki 🇸🇮
               </a>
               <nav style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <a href="/dashboard" style={{ color: "#333", textDecoration: "none" }}>Dashboard</a>
-                <a href="/upload" style={{ color: "#333", textDecoration: "none" }}>Upload</a>
+                <a href="/dashboard" style={{ color: "#333", textDecoration: "none" }}>Nadzorna plošča</a>
+                <a href="/upload" style={{ color: "#333", textDecoration: "none" }}>Uvoz CSV</a>
                 <a href="/transactions" style={{ color: "#333", textDecoration: "none" }}>Transakcije</a>
-                <a href="/reports" style={{ color: "#333", textDecoration: "none" }}>Reports</a>
+                <a href="/reports" style={{ color: "#333", textDecoration: "none" }}>Poročila</a>
                 <a href="/profile" style={{ color: "#333", textDecoration: "none" }}>Profil</a>
               </nav>
             </div>
