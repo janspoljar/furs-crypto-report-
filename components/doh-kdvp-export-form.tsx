@@ -51,13 +51,13 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
           data = JSON.parse(bodyText);
         } catch (parseErr) {
           console.error("Failed to parse JSON response:", parseErr, { status: response.status, contentType, bodyText });
-          setError(`Server returned invalid JSON (status ${response.status}, content-type ${contentType}). Raw response: ${bodyText.slice(0, 2000)}`);
+          setError(`Strežnik je vrnil neveljavni JSON (status ${response.status}). Surovi odgovor: ${bodyText.slice(0, 2000)}`);
           setValidationResult(null);
           return;
         }
       } else {
         console.error("Validate response was not JSON", { status: response.status, contentType, bodyText });
-        setError(`Server returned non-JSON response (status ${response.status}, content-type ${contentType}). Raw response: ${bodyText.slice(0, 2000)}`);
+        setError(`Strežnik je vrnil nepričakovan odgovor (status ${response.status}, tip vsebine: ${contentType}). Surovi odgovor: ${bodyText.slice(0, 2000)}`);
         setValidationResult(null);
         return;
       }
@@ -71,7 +71,7 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
           : undefined;
         if (parsed?.failedAt === "validator-availability") {
           setValidatorWarning(
-            "Lokalna XML schema validacija trenutno ni na voljo. XML export je še vedno mogoč, vendar ni preverjen z lokalnim validatorjem."
+            "Lokalna XML schema validacija trenutno ni na voljo (pogosto na Windows okoljih). XML izvoz je še vedno mogoč."
           );
           setError(null);
           setValidationResult(null);
@@ -79,7 +79,7 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
         }
 
         setError(
-          `${parsed?.error ?? `Validacija ni uspela. Status ${response.status}`}${detailsText ? ` — ${detailsText}` : ""}`
+          `${parsed?.error ?? `Validacija ni uspela (status ${response.status})`}${detailsText ? ` — ${detailsText}` : ""}`
         );
         setValidationResult(null);
         return;
@@ -107,28 +107,26 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
       const contentType = response.headers.get("content-type") || "";
 
       if (!response.ok) {
-        // Try to parse error as JSON
-        let errorMsg = "Prenos je bil neuspešen.";
+        let errorMsg = "Prenos ni uspel.";
         try {
           const data = await response.json();
           errorMsg = data?.error ?? errorMsg;
         } catch {
-          errorMsg = `Server error ${response.status}`;
+          errorMsg = `Napaka strežnika ${response.status}`;
         }
         setError(errorMsg);
         return;
       }
 
-      // Check if response is actually XML
       if (!contentType.includes("application/xml")) {
-        console.warn("Expected XML, got:", contentType);
+        console.warn("Pričakovan XML, dobljeno:", contentType);
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Doh_KDVP_${selectedYear || "all"}.xml`;
+      a.download = `Doh_KDVP_${selectedYear || "vse"}.xml`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -142,16 +140,22 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
   const canValidate = selectedYear || availableYears.length > 0;
   const canDownload = (validationResult?.success && validationResult?.validation.errors.length === 0) || !!validatorWarning;
 
+  // Ocena davčne osnove: 25% kapitalski davek na neto realizirano
+  const taxBase = validationResult?.netRealized && validationResult.netRealized > 0
+    ? validationResult.netRealized
+    : null;
+  const taxEstimate = taxBase ? taxBase * 0.25 : null;
+
   return (
     <section style={{ marginTop: 32 }}>
       <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16, color: "#333" }}>
-        Doh-KDVP XML Export
+        Izvoz DOH-KDVP (XML za eDavke)
       </h2>
 
       <div style={{ display: "grid", gap: 16 }}>
         <div>
           <label style={{ display: "grid", gap: 8 }}>
-            <span style={{ fontWeight: 500, color: "#333" }}>Izberi leto za export</span>
+            <span style={{ fontWeight: 500, color: "#333" }}>Izberi davčno leto</span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
@@ -188,22 +192,8 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
             opacity: !canValidate || loading ? 0.5 : 1,
           }}
         >
-          {loading ? "Preverjam..." : "Preveri validacijo"}
+          {loading ? "Preverjam..." : "Preveri podatke pred izvozom"}
         </button>
-
-        <div
-          style={{
-            padding: 10,
-            backgroundColor: "#f8fafc",
-            borderRadius: 6,
-            border: "1px solid #cbd5e1",
-            color: "#475569",
-            fontSize: 13,
-            lineHeight: 1.5,
-          }}
-        >
-          Local validator may be unavailable on some Windows environments. XML export still works, but local schema validation may not run.
-        </div>
 
         {error && (
           <div
@@ -216,7 +206,7 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
               fontSize: 13,
             }}
           >
-            <strong style={{ display: "block", marginBottom: 6 }}>Napaka pri validaciji</strong>
+            <strong style={{ display: "block", marginBottom: 6 }}>Napaka pri preverjanju</strong>
             {error}
           </div>
         )}
@@ -232,25 +222,10 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
               fontSize: 13,
             }}
           >
-            <strong style={{ display: "block", marginBottom: 6 }}>
-              Lokalni XML validator ni na voljo
-            </strong>
+            <strong style={{ display: "block", marginBottom: 6 }}>⚠ Lokalni XML validator ni na voljo</strong>
             {validatorWarning}
           </div>
         )}
-
-        <div
-          style={{
-            padding: 12,
-            backgroundColor: "#eef2ff",
-            borderRadius: 6,
-            border: "1px solid #c7d2fe",
-            color: "#3730a3",
-            fontSize: 13,
-          }}
-        >
-          Lokalni validator je lahko nedosegljiv v nekaterih Windows okoljih. XML export še vedno deluje, vendar v tem primeru ne bo izvedena lokalna schema validacija.
-        </div>
 
         {validationResult && (
           <div style={{ display: "grid", gap: 16 }}>
@@ -263,19 +238,15 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                {validationResult.success ? "✓ Validacija uspešna" : "✗ Validacija neuspešna"}
+                {validationResult.success ? "✓ Preverjanje uspešno" : "✗ Preverjanje ni uspelo"}
               </div>
 
               {validationResult.validation.errors.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "#c62828", marginBottom: 6 }}>
-                    Napake:
-                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "#c62828", marginBottom: 6 }}>Napake:</div>
                   <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
                     {validationResult.validation.errors.map((err, i) => (
-                      <li key={i} style={{ color: "#c62828", marginBottom: 4 }}>
-                        {err}
-                      </li>
+                      <li key={i} style={{ color: "#c62828", marginBottom: 4 }}>{err}</li>
                     ))}
                   </ul>
                 </div>
@@ -283,14 +254,10 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
 
               {validationResult.validation.warnings.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "#f57f17", marginBottom: 6 }}>
-                    Svarila:
-                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "#f57f17", marginBottom: 6 }}>Opozorila:</div>
                   <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13 }}>
                     {validationResult.validation.warnings.map((warn, i) => (
-                      <li key={i} style={{ color: "#f57f17", marginBottom: 4 }}>
-                        {warn}
-                      </li>
+                      <li key={i} style={{ color: "#f57f17", marginBottom: 4 }}>{warn}</li>
                     ))}
                   </ul>
                 </div>
@@ -306,12 +273,10 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
                   border: "1px solid #ddd",
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 12, color: "#333" }}>
-                  Preview izvoza
-                </div>
+                <div style={{ fontWeight: 600, marginBottom: 12, color: "#333" }}>Pregled pred izvozom</div>
                 <div style={{ display: "grid", gap: 8, fontSize: 13 }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Leto:</span>
+                    <span>Davčno leto:</span>
                     <strong>{validationResult.reportYear || "Vse"}</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -319,23 +284,35 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
                     <strong>{validationResult.sellCount}</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Neto realizirani rezultat:</span>
+                    <span>Neto realizirani izkupiček:</span>
                     <strong
-                      style={{
-                        color: validationResult.netRealized >= 0 ? "#2a7" : "#c62828",
-                      }}
+                      style={{ color: validationResult.netRealized >= 0 ? "#2a7" : "#c62828" }}
                     >
                       {validationResult.netRealized.toFixed(2)} €
                     </strong>
                   </div>
+                  {taxBase !== null && taxEstimate !== null && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginTop: 8,
+                        paddingTop: 8,
+                        borderTop: "1px solid #ddd",
+                      }}
+                    >
+                      <span style={{ fontWeight: 500 }}>Ocena davka (25% dohodnina):</span>
+                      <strong style={{ color: "#c62828" }}>{taxEstimate.toFixed(2)} €</strong>
+                    </div>
+                  )}
                   {validationResult.hasMissingISIN && (
-                    <div style={{ color: "#f57f17", marginTop: 8, fontSize: 12 }}>
-                      ⚠ Nekateri vrednostni papirji nimajo ISIN podatkov.
+                    <div style={{ color: "#f57f17", marginTop: 8, fontSize: 12, padding: "8px 10px", backgroundColor: "#fff8e1", borderRadius: 4 }}>
+                      ⚠ Nekateri vrednostni papirji nimajo podatkov o ISIN — preverite pred oddajo na eDavke.
                     </div>
                   )}
                   {validationResult.hasUnmatchedQty && (
-                    <div style={{ color: "#f57f17", marginTop: 2, fontSize: 12 }}>
-                      ⚠ Obstajajo neujetoprodaje brez popolnega FIFO ujemanja.
+                    <div style={{ color: "#f57f17", marginTop: 4, fontSize: 12, padding: "8px 10px", backgroundColor: "#fff8e1", borderRadius: 4 }}>
+                      ⚠ Obstajajo prodaje brez popolnega FIFO ujemanja — možni nepopolni podatki.
                     </div>
                   )}
                 </div>
@@ -356,7 +333,7 @@ export default function DohKdvpExportForm({ availableYears }: Props) {
                   fontSize: 14,
                 }}
               >
-                ⬇ Prenesi XML
+                ⬇ Prenesi XML (DOH-KDVP)
               </button>
             )}
           </div>
