@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/supabase/server";
 import { getFifoForUser } from "@/lib/fifo-server";
 import TaxpayerProfileStatus from "@/components/taxpayer-profile-status";
 import DohKdvpExportForm from "@/components/doh-kdvp-export-form";
+import DohDivExportForm from "@/components/doh-div-export-form";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 interface ReportsPageProps {
   searchParams: Promise<{ year?: string; debug?: string }>;
@@ -18,6 +20,7 @@ interface AnnualSummaryRow {
   realizedProfit: number;
   realizedLoss: number;
   netRealized: number;
+  taxEstimate: number;
 }
 
 function formatCurrency(value: number) {
@@ -44,50 +47,38 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     ? fifo.sales.filter((sale) => sale.date.getFullYear().toString() === yearFilter)
     : fifo.sales;
 
-  const annualSummary = sellYears.map((year) => {
+  const annualSummary: AnnualSummaryRow[] = sellYears.map((year) => {
     const yearSales = fifo.sales.filter((sale) => sale.date.getFullYear() === year);
-    const totalGrossProceeds = Number(
-      yearSales.reduce((sum, sale) => sum + sale.grossProceeds, 0).toFixed(2)
-    );
-    const totalNetProceeds = Number(
-      yearSales.reduce((sum, sale) => sum + sale.netProceeds, 0).toFixed(2)
-    );
-    const totalGrossCost = Number(
-      yearSales.reduce((sum, sale) => sum + sale.grossCost, 0).toFixed(2)
-    );
-    const totalNetCost = Number(
-      yearSales.reduce((sum, sale) => sum + sale.netCost, 0).toFixed(2)
-    );
-    const realizedProfit = Number(
-      yearSales.filter((sale) => sale.profit > 0).reduce((sum, sale) => sum + sale.profit, 0).toFixed(2)
-    );
-    const realizedLoss = Number(
-      yearSales.filter((sale) => sale.profit < 0).reduce((sum, sale) => sum + sale.profit, 0).toFixed(2)
-    );
+    const totalGrossProceeds = Number(yearSales.reduce((sum, sale) => sum + sale.grossProceeds, 0).toFixed(2));
+    const totalNetProceeds = Number(yearSales.reduce((sum, sale) => sum + sale.netProceeds, 0).toFixed(2));
+    const totalGrossCost = Number(yearSales.reduce((sum, sale) => sum + sale.grossCost, 0).toFixed(2));
+    const totalNetCost = Number(yearSales.reduce((sum, sale) => sum + sale.netCost, 0).toFixed(2));
+    const realizedProfit = Number(yearSales.filter((s) => s.profit > 0).reduce((sum, s) => sum + s.profit, 0).toFixed(2));
+    const realizedLoss = Number(yearSales.filter((s) => s.profit < 0).reduce((sum, s) => sum + s.profit, 0).toFixed(2));
     const netRealized = Number((realizedProfit + realizedLoss).toFixed(2));
     const taxEstimate = netRealized > 0 ? Number((netRealized * 0.25).toFixed(2)) : 0;
-
-    return {
-      year,
-      sellCount: yearSales.length,
-      totalGrossProceeds,
-      totalNetProceeds,
-      totalGrossCost,
-      totalNetCost,
-      realizedProfit,
-      realizedLoss,
-      netRealized,
-      taxEstimate,
-    };
+    return { year, sellCount: yearSales.length, totalGrossProceeds, totalNetProceeds, totalGrossCost, totalNetCost, realizedProfit, realizedLoss, netRealized, taxEstimate };
   });
+
+  // Leta z dividendami (za DOH-DIV formo)
+  let divYears: number[] = [];
+  try {
+    const { data: divData } = await supabaseAdmin
+      .from("transactions")
+      .select("date")
+      .eq("user_id", user.id)
+      .eq("type", "staking")
+      .order("date", { ascending: true });
+    if (divData && divData.length > 0) {
+      divYears = Array.from(new Set(divData.map((d) => new Date(d.date).getFullYear()))).sort((a, b) => b - a);
+    }
+  } catch {
+    // ni kritično — DOH-DIV forma bo prazna
+  }
 
   const totalSells = fifo.sales.length;
   const totalYears = sellYears.length;
   const filteredYearLabel = yearFilter ? ` (${yearFilter})` : "";
-
-  // Agregate dividende/staking transakcije za DOH-DIV prikaz
-  // (placeholder — dejanski podatki bodo, ko bo DOH-DIV endpoint implementiran)
-  const hasDividends = false; // TODO: preberi iz supabase ko bo endpoint
 
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: 24 }}>
@@ -96,7 +87,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         Pregled realiziranih prodaj po FIFO modelu in izvoz za eDavke.
       </p>
 
-      {/* Skupni KPI-ji */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 24, marginBottom: 32 }}>
         <div style={{ padding: 16, backgroundColor: "#f0f0f0", borderRadius: 8 }}>
           <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Skupaj prodaj</div>
@@ -114,7 +104,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <div style={{ padding: 16, backgroundColor: "#fff7e6", borderRadius: 8, border: "1px solid #f2d6a0", marginBottom: 24 }}>
         <p style={{ margin: 0, color: "#333" }}>
-          <strong>Opomba:</strong> Trenutna logika upošteva le nakup/prodaja transakcije in provizije. Dividende, obresti, transferji, dvigi in pologi trenutno niso vključeni v DOH-KDVP izračun.
+          <strong>Opomba:</strong> Trenutna logika upošteva le nakup/prodaja transakcije in provizije.
+          Dividende in staking nagrade so obravnavane ločeno v razdelku DOH-DIV spodaj.
         </p>
       </div>
 
@@ -140,9 +131,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </button>
       </form>
 
-      {/* Tabela letnih povzetkov */}
+      {/* DOH-KDVP tabela */}
       <section style={{ overflowX: "auto", marginBottom: 40 }}>
-        <h2 style={{ marginBottom: 12 }}>DOH-KDVP — Letni povzetki</h2>
+        <h2 style={{ marginBottom: 12 }}>DOH-KDVP — Kapitalski dobički po letu</h2>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ backgroundColor: "#f5f5f5", borderBottom: "2px solid #ddd" }}>
@@ -176,49 +167,20 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </tr>
             ))}
             {annualSummary.length === 0 && (
-              <tr>
-                <td colSpan={10} style={{ padding: 24, textAlign: "center", color: "#666" }}>
-                  Ni realiziranih prodaj za prikaz.
-                </td>
-              </tr>
+              <tr><td colSpan={10} style={{ padding: 24, textAlign: "center", color: "#666" }}>Ni realiziranih prodaj za prikaz.</td></tr>
             )}
           </tbody>
         </table>
       </section>
 
-      {/* DOH-DIV sekcija */}
-      <section style={{ marginBottom: 40 }}>
-        <h2 style={{ marginBottom: 8 }}>DOH-DIV — Dividende in obresti</h2>
-        <div style={{ padding: 16, backgroundColor: "#f0fdf4", borderRadius: 8, border: "1px solid #86efac", marginBottom: 16 }}>
-          <p style={{ margin: 0, color: "#166534", fontSize: 14, lineHeight: 1.6 }}>
-            <strong>Zakaj je to pomembno:</strong> Dividende iz tujih vrednostnih papirjev in obresti iz kriptovalut (staking, lending)
-            so v Sloveniji obdavčene z dohodnino — ločeno od kapitalskih dobičkov (DOH-KDVP). Oddati je treba ločen obrazec <strong>DOH-DIV</strong> na eDavke.
-          </p>
-        </div>
-        <div style={{ padding: 16, backgroundColor: hasDividends ? "#fff" : "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-          {hasDividends ? (
-            <p style={{ color: "#333" }}>Tu bodo prikazane dividende in staking nagrade.</p>
-          ) : (
-            <div>
-              <p style={{ color: "#666", marginBottom: 12, fontSize: 14 }}>
-                Transakcije tipa <strong>dividenda/staking</strong> so uvožene, a DOH-DIV izvoz še ni implementiran.
-              </p>
-              <div style={{ fontSize: 13, color: "#555", lineHeight: 1.8 }}>
-                <strong>Naslednji koraki za DOH-DIV:</strong>
-                <ol style={{ marginTop: 8, paddingLeft: 20 }}>
-                  <li>Pregled uvoženih dividend in staking nagrad v zavihku <a href="/transactions?type=staking">Transakcije → Dividend/Interest</a></li>
-                  <li>Zbiranje podatkov o plačniku (naziv podjetja, ISIN, država vira)</li>
-                  <li>Izvoz XML za eDavke (obrazec DOH-DIV) — v pripravi</li>
-                </ol>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
       <TaxpayerProfileStatus userId={user.id} />
 
       <DohKdvpExportForm availableYears={sellYears} />
+
+      {/* DOH-DIV */}
+      <section style={{ marginTop: 48, paddingTop: 32, borderTop: "2px solid #e5e7eb" }}>
+        <DohDivExportForm availableYears={divYears} />
+      </section>
 
       {debugMode && (
         <section style={{ padding: 16, backgroundColor: "#f3f7ff", borderRadius: 8, border: "1px solid #c8d7ff", marginTop: 32 }}>
