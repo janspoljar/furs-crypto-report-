@@ -6,30 +6,49 @@ import { getUserAppProfile } from "@/lib/supabase/app-profile";
 import { isAdmin } from "@/lib/access";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-// Toggles paid_override for a target user.
-// Authorization is re-verified inside this action — never trusting client state.
-// Returns void (required for use as a form action); errors are logged server-side.
+function adminGuard(caller: Awaited<ReturnType<typeof getUserFromServer>>["user"], profile: Awaited<ReturnType<typeof getUserAppProfile>>) {
+  if (!caller) throw new Error("Unauthenticated");
+  if (!isAdmin(profile)) throw new Error("Forbidden");
+}
+
+// Nastavi plan in valid_until za ciljnega uporabnika
+export async function setUserPlan(
+  targetUserId: string,
+  plan: "free" | "pro",
+  months: number // 0 = brez poteka (null)
+): Promise<void> {
+  const { user } = await getUserFromServer();
+  const callerProfile = await getUserAppProfile(user?.id ?? "");
+  try { adminGuard(user, callerProfile); } catch (e) {
+    console.error("[admin] setUserPlan unauthorized:", e); return;
+  }
+
+  const validUntil = plan === "pro" && months > 0
+    ? new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString()
+    : null;
+
+  const { error } = await supabaseAdmin
+    .from("subscriptions")
+    .upsert(
+      { user_id: targetUserId, plan, valid_until: validUntil, paid_override: false },
+      { onConflict: "user_id" }
+    );
+
+  if (error) { console.error("[admin] setUserPlan DB error:", error.message); return; }
+  revalidatePath("/admin");
+}
+
+// Nastavi paid_override (hitra pot brez poteka)
 export async function setUserPaidOverride(
   targetUserId: string,
   value: boolean
 ): Promise<void> {
-  // Step 1: Re-read auth from cookies. Never trust caller-provided identity.
   const { user } = await getUserFromServer();
-  if (!user) {
-    console.error("[admin] setUserPaidOverride: unauthenticated call");
-    return;
+  const callerProfile = await getUserAppProfile(user?.id ?? "");
+  try { adminGuard(user, callerProfile); } catch (e) {
+    console.error("[admin] setUserPaidOverride unauthorized:", e); return;
   }
 
-  // Step 2: Re-read role from DB. Never trust any profile passed from the client.
-  const callerProfile = await getUserAppProfile(user.id);
-  if (!isAdmin(callerProfile)) {
-    console.error("[admin] setUserPaidOverride: non-admin attempt by", user.id);
-    return;
-  }
-
-  // Step 3: Upsert only paid_override.
-  // On conflict (row exists): updates paid_override, leaves plan untouched.
-  // On insert (no row yet): plan defaults to 'free' from the column default.
   const { error } = await supabaseAdmin
     .from("subscriptions")
     .upsert(
@@ -37,10 +56,6 @@ export async function setUserPaidOverride(
       { onConflict: "user_id" }
     );
 
-  if (error) {
-    console.error("[admin] setUserPaidOverride DB error:", error.message);
-    return;
-  }
-
+  if (error) { console.error("[admin] setUserPaidOverride DB error:", error.message); return; }
   revalidatePath("/admin");
 }
