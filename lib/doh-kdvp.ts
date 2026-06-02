@@ -341,14 +341,14 @@ export async function validateDohKdvpXml(xml: string): Promise<XmlSchemaValidati
     if (message.startsWith("XML validator dependency load failed")) {
       return {
         valid: false,
-        errors: [{ message }],
+        errors: [message],
         warnings: [],
         validatorError: message,
       };
     }
     return {
       valid: false,
-      errors: [{ message }],
+      errors: [message],
       warnings: [],
     };
   }
