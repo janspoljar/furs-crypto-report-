@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AppHeader from "@/components/app-header";
+import RevealInit from "@/components/reveal-init";
 
 export const metadata: Metadata = {
   title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body>
         <AppHeader />
         {children}
+        <RevealInit />
         <script dangerouslySetInnerHTML={{
           __html: `(function(){
             var stored=localStorage.getItem('dnd-theme');
@@ -52,14 +54,6 @@ export default function RootLayout({
               if(!bar)return;
               var on=function(){bar.classList.toggle('scrolled',window.scrollY>4);};
               window.addEventListener('scroll',on,{passive:true});on();
-            }
-            function initReveal(){
-              var els=document.querySelectorAll('.reveal');
-              if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
-              var io=new IntersectionObserver(function(entries){
-                entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
-              },{threshold:0.12,rootMargin:'0px 0px -6% 0px'});
-              els.forEach(function(el){io.observe(el);});
             }
             function initFaq(){
               document.querySelectorAll('.faq-item').forEach(function(item){
@@ -85,9 +79,9 @@ export default function RootLayout({
               });
             }
             if(document.readyState==='loading'){
-              document.addEventListener('DOMContentLoaded',function(){initTheme();initAppbar();initReveal();initFaq();initChips();});
+              document.addEventListener('DOMContentLoaded',function(){initTheme();initAppbar();initFaq();initChips();});
             } else {
-              initTheme();initAppbar();initReveal();initFaq();initChips();
+              initTheme();initAppbar();initFaq();initChips();
             }
           })();`
         }} />
