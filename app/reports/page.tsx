@@ -29,6 +29,14 @@ interface AnnualSummaryRow {
   taxEstimate: number;
 }
 
+interface NegInventoryDetail {
+  asset: string;
+  unmatchedQty: number;
+  firstSaleDate: Date;
+  saleCount: number;
+  hasPartialMatch: boolean;
+}
+
 function formatCurrency(value: number) {
   return `${value.toFixed(2)} €`;
 }
@@ -55,6 +63,22 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       fifo.sales.filter((s) => s.unmatchedQuantity > 1e-8).map((s) => s.asset)
     )
   ).sort();
+
+  // N2: detailed negative inventory info
+  const negativeInventoryDetails: NegInventoryDetail[] = negativeInventoryAssets.map(asset => {
+    const problematicSales = fifo.sales
+      .filter(s => s.asset === asset && s.unmatchedQuantity > 1e-8)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    const unmatchedQty = problematicSales.reduce((sum, s) => sum + s.unmatchedQuantity, 0);
+    const hasPartialMatch = problematicSales.some(s => s.matchedQuantity > 0);
+    return {
+      asset,
+      unmatchedQty,
+      firstSaleDate: problematicSales[0]?.date ?? new Date(),
+      saleCount: problematicSales.length,
+      hasPartialMatch,
+    };
+  });
 
   const sellYears = Array.from(
     new Set(fifo.sales.map((sale) => sale.date.getFullYear()))
@@ -115,6 +139,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const totalYears = sellYears.length;
   const filteredYearLabel = yearFilter ? ` (${yearFilter})` : "";
 
+  // TASK 1: FURS-ready status panel computation
+  const errorCount = negativeInventoryAssets.length;
+  const warningCount = hasStakingWithoutWithholding ? 1 : 0;
+  type StatusLevel = "ok" | "warn" | "error" | "no-data";
+  const statusLevel: StatusLevel =
+    annualSummary.length === 0 ? "no-data" :
+    errorCount > 0 ? "error" :
+    warningCount > 0 ? "warn" : "ok";
+
   return (
     <main>
       <section className="page-head">
@@ -154,30 +187,157 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           <a className="btn btn-secondary" href="/cenik">Nadgradi na Pro <span className="arr">→</span></a>
         </div>
 
+        {/* TASK 1: FURS-ready status panel */}
+        {statusLevel !== "no-data" && (() => {
+          const isOk = statusLevel === "ok";
+          const isWarn = statusLevel === "warn";
+          const isError = statusLevel === "error";
+          const borderColor = isOk ? "var(--pos)" : isWarn ? "var(--warn)" : "var(--neg)";
+          const iconBg = isOk ? "rgba(34,197,94,0.12)" : isWarn ? "rgba(234,179,8,0.12)" : "rgba(239,68,68,0.12)";
+          const iconColor = isOk ? "var(--pos)" : isWarn ? "var(--warn)" : "var(--neg)";
+          const badgeText = isOk ? "Pripravljeno za FURS" : isWarn ? "Pripravljeno z opozorili" : "Ni pripravljeno za FURS";
+          const explanation = isOk
+            ? "Poročilo je pripravljeno za oddajo na FURS. Prenesite XML in ga uvozite v eDavki."
+            : isWarn
+            ? "Poročilo je pripravljeno, a nekateri podatki niso popolni. Preverite opozorila pred oddajo."
+            : "Najdene so napake, ki blokirajo XML izvoz. Odpravite napake pred oddajo.";
+
+          return (
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 20, flexWrap: "wrap",
+              background: "var(--surface)", border: `1px solid ${borderColor}`,
+              borderRadius: "var(--r-lg)", padding: "20px 24px",
+              marginBottom: 24,
+            }}>
+              {/* Left side: icon + title + description */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flex: 1, minWidth: 0 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: iconBg,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {isOk && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M20 6 9 17l-5-5"/>
+                    </svg>
+                  )}
+                  {isWarn && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  )}
+                  {isError && (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div style={{
+                    display: "inline-block", fontSize: 11, fontWeight: 700,
+                    letterSpacing: "0.05em", textTransform: "uppercase",
+                    color: iconColor, marginBottom: 4,
+                  }}>
+                    {badgeText}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                    {explanation}
+                  </p>
+                </div>
+              </div>
+              {/* Right side: counters + CTA */}
+              <div style={{ display: "flex", alignItems: "center", gap: 20, flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: errorCount > 0 ? "var(--neg)" : "var(--muted)", lineHeight: 1 }}>{errorCount}</div>
+                    <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 2 }}>Napake</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: warningCount > 0 ? "var(--warn)" : "var(--muted)", lineHeight: 1 }}>{warningCount}</div>
+                    <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 2 }}>Opozorila</div>
+                  </div>
+                </div>
+                {errorCount > 0 && (
+                  <a href="#neg-inventory" style={{
+                    fontSize: 13, fontWeight: 600, color: "var(--neg)",
+                    textDecoration: "none", whiteSpace: "nowrap",
+                  }}>
+                    Preglej napake ↓
+                  </a>
+                )}
+                {errorCount === 0 && warningCount > 0 && (
+                  <a href="#div-section" style={{
+                    fontSize: 13, fontWeight: 600, color: "var(--warn)",
+                    textDecoration: "none", whiteSpace: "nowrap",
+                  }}>
+                    Preglej opozorila ↓
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Year cards — DOH-KDVP */}
         <h2 className="h-3" style={{ margin: "28px 0 14px" }}>Doh-KDVP — Kapitalski dobiček od vrednostnih papirjev</h2>
 
-        {/* N2: Negative inventory hard error */}
+        {/* TASK 2: Enhanced N2 negative inventory diagnostic table */}
         {negativeInventoryAssets.length > 0 && (
-          <div className="val-error" style={{ marginBottom: 20, padding: "16px 20px", borderRadius: "var(--r-md)" }}>
-            <div className="val-head" style={{ fontSize: 14, marginBottom: 8 }}>
+          <div id="neg-inventory" className="val-error" style={{ marginBottom: 20, padding: "16px 20px", borderRadius: "var(--r-md)" }}>
+            <div className="val-head" style={{ fontSize: 14, marginBottom: 10 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               Negativna zaloga — XML izvoz blokiran
             </div>
-            <p style={{ margin: "0 0 10px", fontSize: 13 }}>
-              Naslednji ticker{negativeInventoryAssets.length > 1 ? "ji imajo" : " ima"} prodaje brez ustreznih nakupov:{" "}
-              <strong>{negativeInventoryAssets.join(", ")}</strong>.
-              To onemogoči pravilen FIFO izračun.
+            <p style={{ margin: "0 0 14px", fontSize: 13 }}>
+              Spodnji ticker{negativeInventoryAssets.length > 1 ? "ji imajo" : " ima"} prodaje brez ustreznih nakupov v sistemu. To onemogoči pravilen FIFO izračun in blokira generiranje XML datoteke.
             </p>
-            <p style={{ margin: "0 0 10px", fontSize: 13 }}>Možni vzroki:</p>
-            <ul style={{ margin: "0 0 12px", paddingLeft: 20, fontSize: 13 }}>
-              <li>Manjkajoči CSV izpiski za pretekla leta</li>
-              <li>Napačen vrstni red transakcij pri uvozu</li>
-              <li>Nezaznani delniški split (stock split)</li>
-            </ul>
-            <a href="/navodila" style={{ fontSize: 13, color: "var(--error)", fontWeight: 600 }}>
-              Navodila za uvoz in odpravo napak →
-            </a>
+
+            <div className="tbl-wrap">
+              <div className="tbl-scroll">
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>Ticker</th>
+                      <th className="num">Neujeta kol.</th>
+                      <th>Prva prodaja</th>
+                      <th>Verjetni vzrok</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {negativeInventoryDetails.map((detail) => (
+                      <tr key={detail.asset}>
+                        <td><strong>{detail.asset}</strong></td>
+                        <td className="num mono">{detail.unmatchedQty.toFixed(4)}</td>
+                        <td>{detail.firstSaleDate.toLocaleDateString("sl-SI", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                        <td style={{ fontSize: 12, color: "var(--muted)" }}>
+                          {detail.hasPartialMatch
+                            ? "Nezaznan split ali manjkajoči CSV"
+                            : "Manjkajoči CSV iz preteklih let"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* How to fix card */}
+            <div style={{
+              background: "var(--surface)", border: "1px solid var(--line)",
+              borderRadius: "var(--r-md)", padding: "16px 20px", marginTop: 16,
+            }}>
+              <strong style={{ fontSize: 13, display: "block", marginBottom: 10 }}>Kako to popravim?</strong>
+              <ol style={{ margin: "0 0 10px", paddingLeft: 20, fontSize: 13, lineHeight: 1.9, color: "var(--ink)" }}>
+                <li>Uvozite starejše CSV datoteke iz preteklih let</li>
+                <li>Preverite split/reverse-split dogodke v izpisku</li>
+                <li>Preverite, da ni prišlo do dvojnega uvoza ali manjkajočih nakupov</li>
+              </ol>
+              <a href="/navodila" style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600 }}>
+                Navodila za uvoz in odpravo napak →
+              </a>
+            </div>
           </div>
         )}
 
@@ -242,7 +402,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </div>
         )}
 
-        {/* N1: How to import to eDavki */}
+        {/* TASK 3: N1 — Upgraded eDavki step-by-step card */}
         <div style={{
           background: "var(--surface)", border: "1px solid var(--line)",
           borderRadius: "var(--r-lg)", padding: "20px 24px",
@@ -250,17 +410,26 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--accent)", flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            <strong style={{ fontSize: 14 }}>Kako uvozim datoteko v eDavki?</strong>
+            <strong style={{ fontSize: 14 }}>Kako oddate XML v eDavke</strong>
           </div>
-          <ol style={{ margin: "0 0 14px", paddingLeft: 20, fontSize: 13, lineHeight: 1.8, color: "var(--ink)" }}>
-            <li>Odpri <strong>eDavki</strong> → <strong>Dokumenti</strong> → <strong>Uvoz dokumentov</strong></li>
-            <li>Klikni gumb <strong>Uvozi dokument</strong></li>
-            <li>Izberi XML datoteko, ki si jo pravkar prenesel</li>
-            <li>Klikni <strong>Oddaj</strong> in preveri morebitna opozorila</li>
+          <ol style={{ margin: "0 0 14px", paddingLeft: 20, fontSize: 13, lineHeight: 1.9, color: "var(--ink)" }}>
+            <li>Prenesite XML datoteko (gumb <strong>Prenesi XML</strong> zgoraj)</li>
+            <li>Odprite portal eDavki na spletnem naslovu <strong>edavki.durs.si</strong></li>
+            <li>Pojdite na <strong>Dokumenti</strong> → <strong>Uvoz dokumenta</strong></li>
+            <li>Izberite preneseno XML datoteko in kliknite <strong>Uvozi</strong></li>
+            <li>Preverite uvožen obrazec in kliknite <strong>Oddaj</strong></li>
           </ol>
-          <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
-            Oba DOH-KDVP in DOH-DIV uporabljata splošni XML uvoz. Ob napaki preverite opozorila pri uvoženi datoteki v eDavkah.
+          <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+            XML datoteka mora biti v pravilni FURS strukturi — aplikacija to zagotovi samodejno. Po uvozu lahko podatke v eDavkah še pregledate in popravite pred oddajo.
           </p>
+          <a
+            href="https://edavki.durs.si/EdavkiPortal/PersonalPortal/[360253]/Pages/Help/sl/Documents_Import.htm"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 12, color: "var(--muted)", textDecoration: "underline" }}
+          >
+            Pomoč za uvoz dokumentov na eDavki ↗
+          </a>
         </div>
 
         {/* Taxpayer profile status — shown always so user knows what to fill */}
@@ -269,7 +438,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </div>
 
         {/* Doh-Div section */}
-        <div className="div-section">
+        <div id="div-section" className="div-section">
           <div className="copy">
             <span className="badge badge-info">Doh-Div</span>
             <h3>Poročilo za dividende</h3>

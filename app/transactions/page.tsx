@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getFifoForUser } from "@/lib/fifo-server";
 import { getSubscription } from "@/lib/subscription";
+import TransactionEcbBadge from "@/components/transaction-ecb-badge";
 
 export const metadata: Metadata = {
   title: "Transakcije | DavkiNaDelnicah.si",
@@ -302,7 +303,20 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                             <td className="num mono">{tx.amount.toFixed(4)}</td>
                             <td className="num mono">{tx.price_eur.toFixed(2)}</td>
                             <td className="num mono">{tx.fee_eur != null ? tx.fee_eur.toFixed(2) : "—"}</td>
-                            <td>{tx.broker || tx.exchange || "—"}</td>
+                            <td>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, position: "relative" }}>
+                                {tx.broker || tx.exchange || "—"}
+                                {tx.broker && CRYPTO_BROKERS.has(tx.broker.toLowerCase()) && (
+                                  <TransactionEcbBadge
+                                    date={tx.date}
+                                    asset={tx.asset}
+                                    priceEur={tx.price_eur}
+                                    broker={tx.broker}
+                                    isPro={subscription.isPro}
+                                  />
+                                )}
+                              </span>
+                            </td>
                           </tr>
                         );
                       })}
