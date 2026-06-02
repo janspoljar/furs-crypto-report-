@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
   description: "Davčna napoved za slovenske vlagatelje po pravilih FURS. FIFO izračun, Doh-KDVP in Doh-Div XML izvoz.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si"),
 };
 
 export default function RootLayout({

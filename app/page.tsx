@@ -1,3 +1,45 @@
+import type { Metadata } from "next";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
+
+export const metadata: Metadata = {
+  title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+  description:
+    "Uvozi CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. XML za eDavki (Doh-KDVP, Doh-Div) v minutah.",
+  metadataBase: new URL(APP_URL),
+  openGraph: {
+    title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+    description:
+      "Uvozi CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. XML za eDavki v minutah.",
+    url: APP_URL,
+    siteName: "DavkiNaDelnicah.si",
+    type: "website",
+    locale: "sl_SI",
+    // ⚠️ Ustvari /public/og-image.png (1200×630px) pred deploymentom.
+    // Priporočena vsebina: temno zelena (#01696F) ozadje, bel logotip DavkiNaDelnicah.si,
+    // headline "Davčna napoved brez glavobola", pod njim screenshot poročila.
+    // Orodje: og-playground.vercel.app ali Figma z @vercel/og.
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+    description:
+      "Uvozi CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. XML za eDavki v minutah.",
+    images: ["/og-image.png"],
+  },
+  alternates: {
+    canonical: APP_URL,
+  },
+};
+
 function CheckIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pos)" strokeWidth="2.4" strokeLinecap="round">
@@ -259,12 +301,33 @@ export default function HomePage() {
             <div className="foot-col">
               <h4>Pravno</h4>
               <a href="#">Splošni pogoji</a>
-              <a href="#">Zasebnost</a>
+              <a href="/privacy">Politika zasebnosti</a>
               <a href="#">Piškotki</a>
             </div>
           </div>
+
+          {/* Podatki o ponudniku — ZVPot-1 čl. 43 (obvezno za e-commerce) */}
+          {/* ⚠️ ZAMENJAJ VSE VREDNOSTI Z RESNIČNIMI PODATKI */}
+          <div style={{
+            borderTop: "1px solid var(--line-soft)",
+            paddingTop: 20,
+            marginBottom: 16,
+            fontSize: 12,
+            color: "var(--muted-2)",
+            lineHeight: 2,
+          }}>
+            <strong style={{ color: "var(--muted)", display: "block", marginBottom: 4, fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase" }}>
+              Podatki o podjetju
+            </strong>
+            ⚠️ [IME PODJETJA ali S.P.] · ⚠️ [NASLOV], Slovenija
+            <br />
+            Mat. številka: ⚠️ [MATICNA] · ID za DDV: ⚠️ SI[DDVSTEVILKA] (ali: ni zavezanec po 94. čl. ZDDV-1)
+            <br />
+            Kontakt: <a href="mailto:podpora@davkinadelnicah.si" style={{ color: "var(--muted)" }}>podpora@davkinadelnicah.si</a>
+          </div>
+
           <div className="foot-bottom">
-            <p>© 2026 DavkiNaDelnicah.si · Ni davčni svetovalec — informativni izračun.</p>
+            <p>© {new Date().getFullYear()} DavkiNaDelnicah.si · Ni davčni svetovalec — informativni izračun.</p>
             <p>v1.4.0 · Slovenija</p>
           </div>
         </div>

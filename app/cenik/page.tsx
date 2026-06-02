@@ -95,6 +95,11 @@ export default async function CenikPage({ searchParams }: CenikPageProps) {
                 <h3>Pro</h3>
                 <span className="price">19&nbsp;€<small>/davčno leto</small></span>
               </div>
+              {/* ⚠️ ZAMENJAJ: Če si DDV zavezanec → "Cena vključuje 22 % DDV"
+                             Če si mali davčni zavezanec → obdrži spodnjo vrstico */}
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: "-4px 0 10px", lineHeight: 1.4 }}>
+                DDV ni obračunan (mali davčni zavezanec po 94. členu ZDDV-1)
+              </p>
               <p className="muted" style={{ fontSize: 14 }}>Vse, kar potrebuješ za oddajo napovedi v eDavki.</p>
               <ul>
                 <li><CheckIcon /> <strong>Neomejeno</strong> transakcij</li>
@@ -125,6 +130,13 @@ export default async function CenikPage({ searchParams }: CenikPageProps) {
 
           <p className="text-center muted" style={{ marginTop: 24, fontSize: 13.5 }}>
             Plačilo prek Stripe · SEPA, kreditna kartica · 30-dnevna garancija vračila
+          </p>
+          {/* ⚠️ ZAMENJAJ: Podatki o ponudniku storitve (ZVPot-1 čl. 43) */}
+          <p className="text-center" style={{ marginTop: 10, fontSize: 11.5, color: "var(--muted-2)", lineHeight: 1.8 }}>
+            Ponudnik: <strong style={{ color: "var(--muted)" }}>⚠️ [IME PODJETJA ali S.P.]</strong> ·
+            {" "}⚠️ [NASLOV], Slovenija ·
+            {" "}Mat. št.: ⚠️ [MATICNA] ·
+            {" "}ID za DDV: ⚠️ SI[DDVSTEVILKA] ali ni zavezanec
           </p>
         </div>
       </section>
