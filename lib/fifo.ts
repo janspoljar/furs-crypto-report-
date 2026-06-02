@@ -1,9 +1,8 @@
 // ============================================================
-// FIFO helper za osnovni realiziran dobiček / izgubo iz buy/sell transakcij.
-// Podpora v tej fazi: samo "buy" in "sell" v EUR.
-// Preostale tipe (transfer, deposit, withdrawal, dividend, interest, fee) ignoriramo.
+// FIFO helper za realiziran dobiček / izgubo iz buy/sell transakcij.
+// Podpira: buy, sell, split (korporacijska akcija — ne vpliva na P&L).
+// Preostale tipe (transfer, swap, staking, fee, dividend, interest, deposit, withdrawal) ignoriramo.
 // Predpostavka: priceEur je enotska cena v EUR.
-// Fees niso vključene v cost basis / proceeds v tej enostavni verziji.
 // ============================================================
 
 export type TransactionType =
@@ -16,7 +15,8 @@ export type TransactionType =
   | "dividend"
   | "interest"
   | "deposit"
-  | "withdrawal";
+  | "withdrawal"
+  | "split"; // korporacijska akcija: amount = ratio (npr. 2.0 za 2:1 split)
 
 export interface Transaction {
   id: string;
@@ -63,6 +63,13 @@ export interface TaxableSale {
   warning?: string;
 }
 
+export interface SplitEvent {
+  date: Date;
+  asset: string;
+  ratio: number;         // e.g. 2.0 for 2:1 forward split, 0.5 for 1:2 reverse split
+  lotsAdjusted: number;  // number of open lots affected
+}
+
 export interface FifoResult {
   sales: TaxableSale[];
   totalProfit: number;
@@ -70,6 +77,7 @@ export interface FifoResult {
   totalTax: number;
   remainingLots: Map<string, FifoLot[]>;
   summary: { asset: string; profit: number; loss: number; tax: number }[];
+  splitEvents: SplitEvent[];
 }
 
 const TAX_RATE = 0.25;
@@ -85,9 +93,32 @@ export function runFifo(transactions: Transaction[]): FifoResult {
 
   const lots = new Map<string, FifoLot[]>();
   const sales: TaxableSale[] = [];
+  const splitEvents: SplitEvent[] = [];
 
   for (const tx of sorted) {
     if (tx.type === "transfer" || tx.type === "swap" || tx.type === "fee") continue;
+
+    // ── Stock split / reverse split ──────────────────────────────────
+    if (tx.type === "split") {
+      const asset = tx.asset.toUpperCase();
+      const ratio = tx.amount; // amount field carries the split ratio
+      if (ratio <= 0) continue;
+
+      const queue = lots.get(asset);
+      if (queue && queue.length > 0) {
+        for (const lot of queue) {
+          lot.amount        = round8(lot.amount        * ratio);
+          lot.originalAmount = round8(lot.originalAmount * ratio);
+          lot.costPerUnit   = round8(lot.costPerUnit   / ratio);
+          lot.feePerUnit    = round8(lot.feePerUnit    / ratio);
+        }
+        splitEvents.push({ date: tx.date, asset, ratio, lotsAdjusted: queue.length });
+      } else {
+        // No open lots at split time — record event anyway for display
+        splitEvents.push({ date: tx.date, asset, ratio, lotsAdjusted: 0 });
+      }
+      continue;
+    }
 
     const asset = tx.asset.toUpperCase();
 
@@ -192,5 +223,5 @@ export function runFifo(transactions: Transaction[]): FifoResult {
   }
 
   const summary = Array.from(assetMap.entries()).map(([asset, data]) => ({ asset, ...data }));
-  return { sales, totalProfit, totalLoss, totalTax, remainingLots: lots, summary };
+  return { sales, totalProfit, totalLoss, totalTax, remainingLots: lots, summary, splitEvents };
 }

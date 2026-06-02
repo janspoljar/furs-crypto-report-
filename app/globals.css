@@ -648,3 +648,46 @@ table.admin .actions .btn { height: 30px; padding: 0 10px; font-size: 12.5px; }
 .prose code { font-family: var(--font-mono); font-size: .88em; background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
 .prose table.data { margin: 20px 0 28px; }
 .prose table.data th, .prose table.data td { font-size: 14px; }
+
+/* ============ PRO PILL (locked feature badge) ============ */
+.pro-pill {
+  position: absolute; top: -7px; right: -6px;
+  background: var(--accent); color: #fff;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 6px; border-radius: 999px;
+  pointer-events: none;
+}
+
+/* ============ SPLIT BADGE ============ */
+.tag-split { background: #FEF3C7; color: #92400E; padding: 3px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
+[data-theme="dark"] .tag-split { background: #3D2D0A; color: #FCD34D; }
+
+/* ============ XML VALIDATION FEEDBACK ============ */
+.val-ok {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--pos); font-weight: 600;
+}
+.val-warn {
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  border-radius: var(--r-sm); padding: 10px 12px; font-size: 12.5px;
+}
+.val-error {
+  background: color-mix(in srgb, var(--neg) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--neg) 30%, transparent);
+  border-radius: var(--r-sm); padding: 10px 12px; font-size: 12.5px;
+}
+.val-warn .val-head { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--warn); margin-bottom: 6px; }
+.val-error .val-head { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--neg); margin-bottom: 6px; }
+.val-warn ul, .val-error ul { margin: 0 0 0 16px; padding: 0; }
+.val-warn li, .val-error li { margin-bottom: 4px; color: var(--ink-soft); }
+.val-error p { margin: 0 0 6px; color: var(--neg); }
+
+/* ============ UPLOAD PREVIEW ============ */
+.preview-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; }
+.preview-tickers { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.preview-tickers .chip { font-family: var(--font-mono); font-size: 12px; }
+.preview-mini-table { width: 100%; font-size: 12.5px; border-collapse: collapse; margin-top: 12px; }
+.preview-mini-table th { text-align: left; padding: 6px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--line); font-weight: 600; }
+.preview-mini-table td { padding: 7px 10px; border-bottom: 1px solid var(--line-soft); }
+.preview-mini-table tr:last-child td { border-bottom: none; }

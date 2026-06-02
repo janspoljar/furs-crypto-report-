@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { getFifoForUser } from "@/lib/fifo-server";
+import { getSubscription } from "@/lib/subscription";
 import TaxpayerProfileStatus from "@/components/taxpayer-profile-status";
-import DohKdvpExportForm from "@/components/doh-kdvp-export-form";
 import DohDivExportForm from "@/components/doh-div-export-form";
+import ReportCardActions from "@/components/report-card-actions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -36,11 +37,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const params = await searchParams;
   const user = await requireUser();
   if (!user) {
+
     redirect("/login");
   }
 
   const yearFilter = params.year ?? "";
   const debugMode = params.debug === "1";
+
+  const subscription = await getSubscription(user.id);
+  const isPro = subscription.isPro;
 
   const { fifo } = await getFifoForUser(user.id);
 
@@ -163,29 +168,21 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                     <div className="v" style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500 }}>FIFO</div>
                   </div>
                 </div>
-                <div className="row-actions">
-                  <button className="btn btn-line btn-sm" style={{ flex: "0 0 auto" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                    Pregled
-                  </button>
-                  <button className="btn btn-primary btn-sm" disabled>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Prenesi XML
-                  </button>
-                </div>
-                <div className="lock-tip">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  Prenos XML je na voljo samo za Pro načrt
-                </div>
+                <ReportCardActions year={row.year} isPro={isPro} />
+                {!isPro && (
+                  <div className="lock-tip">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    XML izvoz je na voljo samo za Pro načrt
+                  </div>
+                )}
               </article>
             ))}
           </div>
         )}
 
-        {/* DOH-KDVP export form */}
+        {/* Taxpayer profile status — shown always so user knows what to fill */}
         <div style={{ marginTop: 32 }}>
           <TaxpayerProfileStatus userId={user.id} />
-          <DohKdvpExportForm availableYears={sellYears} />
         </div>
 
         {/* Doh-Div section */}

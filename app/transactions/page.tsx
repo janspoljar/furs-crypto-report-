@@ -43,6 +43,7 @@ function getTypeBadge(type: string): { cls: string; label: string } {
     case "dividend": return { cls: "tag-div",      label: "Dividenda" };
     case "transfer": return { cls: "tag-transfer", label: "Transfer" };
     case "fee":      return { cls: "tag-fee",      label: "Provizija" };
+    case "split":    return { cls: "tag-split",    label: "Split" };
     default:         return { cls: "tag-fee",      label: type };
   }
 }
