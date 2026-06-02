@@ -1,3 +1,12 @@
+import type { Metadata } from "next";
+import { getUserFromServer } from "@/lib/supabase/server";
+import { getSubscription } from "@/lib/subscription";
+import CheckoutButton from "./checkout-button";
+
+export const metadata: Metadata = {
+  title: "Cenik | DavkiNaDelnicah.si",
+};
+
 const CENIK_FAQS = [
   { q: "Ali se naročnina obnovi samodejno?", a: "Ne. Pro velja 12 mesecev po plačilu in se ne obnovi samodejno. Po izteku te bomo opomnili — sam se odločiš, ali plačaš naslednje leto." },
   { q: "Ali lahko dobim račun za pravno osebo?", a: "Da. Pri plačilu lahko vneseš podatke podjetja (naziv, naslov, davčno številko) — račun prejmeš avtomatsko po e-pošti." },
@@ -22,11 +31,35 @@ function XIcon() {
   );
 }
 
-export default function CenikPage() {
+interface CenikPageProps {
+  searchParams: Promise<{ success?: string }>;
+}
+
+export default async function CenikPage({ searchParams }: CenikPageProps) {
+  const params = await searchParams;
+  const showSuccess = params.success === "1";
+
+  const { user } = await getUserFromServer();
+  const subscription = user ? await getSubscription(user.id) : null;
+  const isPro = subscription?.isPro ?? false;
+  const validUntil = subscription?.validUntil ?? null;
+
   return (
     <main>
       <section className="section">
         <div className="wrap">
+
+          {/* Success banner after Stripe checkout */}
+          {showSuccess && (
+            <div className="banner-success" style={{ marginBottom: 32 }}>
+              <div>
+                <strong>Uspešno aktivirano ✓</strong>
+                <p>Pro načrt je aktiven. Zdaj imate dostop do neomejenih transakcij in XML izvoza.</p>
+              </div>
+              <a href="/reports" className="btn btn-primary btn-sm">Pojdi na poročila →</a>
+            </div>
+          )}
+
           <div className="pricing-head reveal">
             <span className="eyebrow" style={{ justifyContent: "center" }}>Cenik</span>
             <h1 className="h-1">Pošteno. Letno. Brez naročnine.</h1>
@@ -34,6 +67,7 @@ export default function CenikPage() {
           </div>
 
           <div className="compare-grid">
+            {/* Free column */}
             <div className="compare-col reveal">
               <div className="head">
                 <h3>Brezplačno</h3>
@@ -49,9 +83,12 @@ export default function CenikPage() {
                 <li className="no"><XIcon /> Doh-Div poročilo</li>
                 <li className="no"><XIcon /> Pretekla davčna leta (pred 2024)</li>
               </ul>
-              <button className="btn btn-line cta" disabled>Trenutni načrt</button>
+              <button className="btn btn-line cta" disabled>
+                {isPro ? "Brezplačni načrt" : "Trenutni načrt"}
+              </button>
             </div>
 
+            {/* Pro column */}
             <div className="compare-col pro reveal d1">
               <span className="ribbon">Priporočeno</span>
               <div className="head">
@@ -68,9 +105,21 @@ export default function CenikPage() {
                 <li><CheckIcon /> E-poštna podpora v 24 urah</li>
                 <li><CheckIcon /> Brez samodejne obnove naročnine</li>
               </ul>
-              <a className="btn btn-primary cta" href="#">
-                Plačaj 19 € · enkratno <span className="arr">→</span>
-              </a>
+
+              {isPro ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button className="btn btn-primary cta" disabled style={{ opacity: 0.7 }}>
+                    ✓ Že aktivirano
+                  </button>
+                  {validUntil && (
+                    <p style={{ fontSize: 13, color: "var(--pos)", textAlign: "center", margin: 0, fontWeight: 600 }}>
+                      Veljavno do {validUntil.toLocaleDateString("sl-SI", { day: "2-digit", month: "long", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <CheckoutButton />
+              )}
             </div>
           </div>
 

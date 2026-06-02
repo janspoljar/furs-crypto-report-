@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AppHeader from "@/components/app-header";
 import RevealInit from "@/components/reveal-init";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
@@ -32,6 +33,7 @@ export default function RootLayout({
         <AppHeader />
         {children}
         <RevealInit />
+        <Toaster position="bottom-right" richColors />
         <script dangerouslySetInnerHTML={{
           __html: `(function(){
             var stored=localStorage.getItem('dnd-theme');

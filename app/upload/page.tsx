@@ -1,6 +1,8 @@
 "use client";
 
+// Metadata is not supported in Client Components — see app/upload/layout.tsx for page title
 import { useState, useRef } from "react";
+import { toast } from "sonner";
 
 const BROKER_OPTIONS = [
   { value: "trading212", label: "Trading 212", bg: "#000", fg: "#fff", l: "T", det: "CSV izvoz" },
@@ -52,14 +54,19 @@ export default function UploadPage() {
       if (!res.ok) throw new Error(data?.error || res.statusText);
 
       setTimeout(() => {
-        setDetectedBroker(BROKER_OPTIONS.find(b => b.value === broker)?.label ?? "Trading 212");
-        setTxCount(data?.count ?? data?.transactions?.length ?? Math.floor(87 + Math.random() * 40));
+        const brokerLabel = BROKER_OPTIONS.find(b => b.value === broker)?.label ?? "Trading 212";
+        const count = data?.count ?? data?.transactions?.length ?? 0;
+        setDetectedBroker(brokerLabel);
+        setTxCount(count);
         setUploadState("done");
+        toast.success(`Uvoz uspešen — ${count} transakcij iz ${brokerLabel}`);
       }, 200);
     } catch (err: any) {
       clearInterval(interval);
-      setErrorMessage(err?.message ?? "Napaka pri nalaganju.");
+      const msg = err?.message ?? "Napaka pri nalaganju.";
+      setErrorMessage(msg);
       setUploadState("error");
+      toast.error(msg);
     }
   }
 

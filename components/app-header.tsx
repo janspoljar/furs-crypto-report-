@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const LogoSvg = () => (
@@ -50,23 +50,31 @@ function MarketingHeader() {
 }
 
 function AuthHeader({ pathname, userEmail }: { pathname: string; userEmail?: string }) {
-  const initials = userEmail
-    ? userEmail.slice(0, 2).toUpperCase()
-    : "JS";
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
-  const tab = (href: string, label: string) => {
-    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
-    return (
-      <a href={href} className={isActive ? "active" : ""}>
-        {label}
-      </a>
-    );
-  };
+  const initials = userEmail ? userEmail.slice(0, 2).toUpperCase() : "JS";
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDrawerOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = "/";
+  };
+
+  const tab = (href: string, label: string) => {
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    return (
+      <a href={href} className={isActive ? "active" : ""} onClick={() => setDrawerOpen(false)}>
+        {label}
+      </a>
+    );
   };
 
   return (
@@ -78,26 +86,75 @@ function AuthHeader({ pathname, userEmail }: { pathname: string; userEmail?: str
             DavkiNaDelnicah<span style={{ color: "var(--accent)" }}>.si</span>
           </span>
         </a>
+
+        {/* Desktop nav */}
         <nav className="primary">
           {tab("/upload", "Naloži")}
           {tab("/transactions", "Transakcije")}
           {tab("/reports", "Poročila")}
           {tab("/cenik", "Cenik")}
         </nav>
+
         <div className="right">
           <ThemeToggle />
+
+          {/* Desktop user chip */}
           {userEmail ? (
-            <button
-              className="user-chip"
-              onClick={handleSignOut}
-              title="Odjavi se"
-              style={{ cursor: "pointer" }}
-            >
+            <button className="user-chip hidden-mobile" onClick={handleSignOut} title="Odjavi se" style={{ cursor: "pointer" }}>
               <span className="av">{initials}</span>
-              <span className="hidden-mobile">{userEmail}</span>
+              <span>{userEmail}</span>
             </button>
           ) : (
-            <a href="/login" className="btn btn-ghost btn-sm">Prijava</a>
+            <a href="/login" className="btn btn-ghost btn-sm hidden-mobile">Prijava</a>
+          )}
+
+          {/* Hamburger (mobile only) */}
+          <button
+            className="hamburger"
+            aria-label="Odpri meni"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M3 6h18M3 12h18M3 18h18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Overlay */}
+      <div
+        className={`nav-drawer-overlay${drawerOpen ? " open" : ""}`}
+        onClick={() => setDrawerOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* Drawer */}
+      <div ref={drawerRef} className={`nav-drawer${drawerOpen ? " open" : ""}`} role="dialog" aria-modal="true" aria-label="Navigacija">
+        <div className="drawer-head">
+          <a href="/" className="brand" onClick={() => setDrawerOpen(false)}>
+            <LogoSvg />
+            DavkiNaDelnicah<span style={{ color: "var(--accent)" }}>.si</span>
+          </a>
+          <button onClick={() => setDrawerOpen(false)} aria-label="Zapri meni" style={{ color: "var(--muted)", lineHeight: 1 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <nav>
+          {tab("/upload", "Naloži izpisek")}
+          {tab("/transactions", "Transakcije")}
+          {tab("/reports", "Poročila")}
+          {tab("/cenik", "Cenik")}
+        </nav>
+
+        <div className="drawer-foot">
+          {userEmail && <div className="user-info">{userEmail}</div>}
+          {userEmail ? (
+            <button className="btn btn-line" onClick={handleSignOut}>Odjavi se</button>
+          ) : (
+            <a href="/login" className="btn btn-primary">Prijava</a>
           )}
         </div>
       </div>

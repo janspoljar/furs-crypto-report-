@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getFifoForUser } from "@/lib/fifo-server";
+import { getSubscription } from "@/lib/subscription";
+
+export const metadata: Metadata = {
+  title: "Transakcije | DavkiNaDelnicah.si",
+};
+
+const PAGE_SIZE = 50;
+const FREE_LIMIT = 200;
 
 interface Transaction {
   id: string;
@@ -15,136 +24,138 @@ interface Transaction {
   broker?: string;
 }
 
-interface TransactionStats {
-  total: number;
-  buy: number;
-  sell: number;
-  transfer: number;
-  staking: number;
-  fee: number;
-}
-
 interface TransactionsPageProps {
   searchParams: Promise<{
     type?: string;
     asset?: string;
     broker?: string;
-    from?: string;
-    to?: string;
+    year?: string;
+    page?: string;
     debug?: string;
   }>;
 }
 
-function getTypeColor(type: string) {
+function getTypeBadge(type: string): { cls: string; label: string } {
   switch (type) {
-    case "buy":
-      return "#060";
-    case "sell":
-      return "#c00";
-    case "transfer":
-      return "#008";
-    case "staking":
-      return "#880";
-    case "fee":
-      return "#666";
-    default:
-      return "#333";
+    case "buy":      return { cls: "tag-buy",      label: "Nakup" };
+    case "sell":     return { cls: "tag-sell",     label: "Prodaja" };
+    case "staking":  return { cls: "tag-staking",  label: "Dividende" };
+    case "dividend": return { cls: "tag-div",      label: "Dividenda" };
+    case "transfer": return { cls: "tag-transfer", label: "Transfer" };
+    case "fee":      return { cls: "tag-fee",      label: "Provizija" };
+    default:         return { cls: "tag-fee",      label: type };
   }
-}
-
-function getTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    buy: "Nakup",
-    sell: "Prodaja",
-    transfer: "Transfer",
-    staking: "Dividend/Interest",
-    fee: "Provizija",
-  };
-  return labels[type] || type;
 }
 
 export default async function TransactionsPage({ searchParams }: TransactionsPageProps) {
   const params = await searchParams;
   const user = await requireUser();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  const typeFilter = params.type ?? "";
-  const assetFilter = params.asset ?? "";
+  const typeFilter   = params.type   ?? "";
+  const assetFilter  = params.asset  ?? "";
   const brokerFilter = params.broker ?? "";
-  const dateFromFilter = params.from ?? "";
-  const dateToFilter = params.to ?? "";
-  const debugMode = params.debug === "1";
+  const yearFilter   = params.year   ?? "";
+  const page         = Math.max(1, Number(params.page ?? "1"));
 
-  const { fifo } = await getFifoForUser(user.id, assetFilter || undefined);
-  const openQuantities = Array.from(fifo.remainingLots.entries()).map(([asset, lots]) => ({
-    asset,
-    openQuantity: Number(lots.reduce((sum, lot) => sum + lot.amount, 0).toFixed(8)),
-  }));
-  const totalOpenQuantity = openQuantities.reduce((sum, item) => sum + item.openQuantity, 0);
+  const [{ fifo }, subscription] = await Promise.all([
+    getFifoForUser(user.id, assetFilter || undefined),
+    getSubscription(user.id),
+  ]);
+
   const realizedNet = Number((fifo.totalProfit + fifo.totalLoss).toFixed(2));
 
+  // Total unfiltered count (for gate threshold)
+  const { count: unfiltered } = await supabaseAdmin
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  const globalCount = unfiltered ?? 0;
+  const showGate = !subscription.isPro && globalCount > FREE_LIMIT;
+
+  // Filtered count (for pagination)
+  let countQuery = supabaseAdmin
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  if (typeFilter)   countQuery = countQuery.eq("type", typeFilter);
+  if (assetFilter)  countQuery = countQuery.eq("asset", assetFilter);
+  if (brokerFilter) countQuery = countQuery.eq("broker", brokerFilter);
+  if (yearFilter) {
+    countQuery = countQuery
+      .gte("date", `${yearFilter}-01-01T00:00:00Z`)
+      .lte("date", `${yearFilter}-12-31T23:59:59Z`);
+  }
+  const { count: totalCount } = await countQuery;
+  const total = totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * PAGE_SIZE;
+
+  // Gate clamps how many rows user can actually see
+  const effectiveLimit = showGate ? FREE_LIMIT : Infinity;
+  const gatedFromIndex = Math.max(0, effectiveLimit - offset);
+
+  // Fetch page
   const selectColumns = "id,date,type,asset,amount,price_eur,fee_eur,exchange,broker";
   let query = supabaseAdmin
     .from("transactions")
     .select(selectColumns)
     .eq("user_id", user.id)
-    .order("date", { ascending: false });
+    .order("date", { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1);
+  if (typeFilter)   query = query.eq("type", typeFilter);
+  if (assetFilter)  query = query.eq("asset", assetFilter);
+  if (brokerFilter) query = query.eq("broker", brokerFilter);
+  if (yearFilter) {
+    query = query
+      .gte("date", `${yearFilter}-01-01T00:00:00Z`)
+      .lte("date", `${yearFilter}-12-31T23:59:59Z`);
+  }
 
-  const applyFilters = (q: any, includeBroker: boolean) => {
-    if (typeFilter) {
-      q = q.eq("type", typeFilter);
-    }
-    if (assetFilter) {
-      q = q.eq("asset", assetFilter);
-    }
-    if (includeBroker && brokerFilter) {
-      q = q.eq("broker", brokerFilter);
-    }
-    if (dateFromFilter) {
-      q = q.gte("date", `${dateFromFilter}T00:00:00Z`);
-    }
-    if (dateToFilter) {
-      q = q.lte("date", `${dateToFilter}T23:59:59.999Z`);
-    }
-    return q;
-  };
-
-  query = applyFilters(query, true);
   let result = await query;
   let data = result.data;
   let error = result.error;
 
-  if (error && error.message?.includes("transactions.broker")) {
-    const fallbackQuery = supabaseAdmin
+  if (error?.message?.includes("transactions.broker")) {
+    const fallback = await supabaseAdmin
       .from("transactions")
       .select("id,date,type,asset,amount,price_eur,fee_eur,exchange")
       .eq("user_id", user.id)
-      .order("date", { ascending: false });
-
-    result = await applyFilters(fallbackQuery, false);
-    const fallback = await result;
-    data = fallback.data;
+      .order("date", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+    data = (fallback.data as unknown) as typeof data;
     error = fallback.error;
   }
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   const transactions = (data || []) as Transaction[];
-  const stats: TransactionStats = {
-    total: transactions.length,
-    buy: transactions.filter((t) => t.type === "buy").length,
-    sell: transactions.filter((t) => t.type === "sell").length,
-    transfer: transactions.filter((t) => t.type === "transfer").length,
-    staking: transactions.filter((t) => t.type === "staking").length,
-    fee: transactions.filter((t) => t.type === "fee").length,
+
+  // Filter options
+  const { data: allTx } = await supabaseAdmin
+    .from("transactions")
+    .select("asset,broker")
+    .eq("user_id", user.id);
+  const uniqueBrokers = Array.from(
+    new Set((allTx || []).map((t) => t.broker).filter(Boolean) as string[])
+  ).sort();
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2021 }, (_, i) => currentYear - i);
+
+  const pageParam = (p: number) => {
+    const sp = new URLSearchParams({
+      ...(typeFilter   && { type: typeFilter }),
+      ...(assetFilter  && { asset: assetFilter }),
+      ...(brokerFilter && { broker: brokerFilter }),
+      ...(yearFilter   && { year: yearFilter }),
+      page: String(p),
+    });
+    return `/transactions?${sp.toString()}`;
   };
 
-  const uniqueAssets = Array.from(new Set(transactions.map((t) => t.asset))).sort();
-  const uniqueBrokers = Array.from(new Set(transactions.map((t) => t.broker).filter(Boolean) as string[])).sort();
+  // Free users can't navigate past FREE_LIMIT regardless of total
+  const canGoNext = safePage < totalPages && (!showGate || offset + PAGE_SIZE < FREE_LIMIT);
 
   return (
     <main>
@@ -185,7 +196,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
           </div>
           <div className="admin-stat">
             <div className="k">Skupaj transakcij</div>
-            <div className="v" style={{ fontSize: 28 }}>{stats.total}<small> zapisov</small></div>
+            <div className="v" style={{ fontSize: 28 }}>{globalCount}<small> zapisov</small></div>
           </div>
         </div>
 
@@ -193,28 +204,33 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
         <form method="get" className="filter-bar">
           <div className="search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input type="text" name="asset" defaultValue={assetFilter} placeholder="Išči po tickerju (npr. BTC, ETH)…" />
+            <input type="text" name="asset" defaultValue={assetFilter} placeholder="Ticker (BTC, AAPL…)" />
           </div>
-          <select className="select" name="type" defaultValue={typeFilter} style={{ width: "auto", minWidth: 140 }}>
+          <select className="select" name="type" defaultValue={typeFilter} style={{ width: "auto", minWidth: 130 }}>
             <option value="">Vsi tipi</option>
             <option value="buy">Nakup</option>
             <option value="sell">Prodaja</option>
             <option value="staking">Dividende</option>
             <option value="transfer">Transfer</option>
+            <option value="fee">Provizija</option>
           </select>
           {uniqueBrokers.length > 0 && (
-            <select className="select" name="broker" defaultValue={brokerFilter} style={{ width: "auto", minWidth: 140 }}>
+            <select className="select" name="broker" defaultValue={brokerFilter} style={{ width: "auto", minWidth: 130 }}>
               <option value="">Vsi brokerji</option>
               {uniqueBrokers.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           )}
+          <select className="select" name="year" defaultValue={yearFilter} style={{ width: "auto", minWidth: 110 }}>
+            <option value="">Vsa leta</option>
+            {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+          </select>
+          <input type="hidden" name="page" value="1" />
           <button type="submit" className="btn btn-primary btn-sm">Filtriraj</button>
-          {(typeFilter || assetFilter || brokerFilter) && (
+          {(typeFilter || assetFilter || brokerFilter || yearFilter) && (
             <a href="/transactions" className="btn btn-line btn-sm">Počisti</a>
           )}
         </form>
 
-        {/* Table */}
         {transactions.length === 0 ? (
           <div className="empty">
             <h3>Ni transakcij</h3>
@@ -222,46 +238,127 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
             <a href="/upload" className="btn btn-primary">Naloži izpisek</a>
           </div>
         ) : (
-          <div className="tbl-wrap" style={{ position: "relative" }}>
-            <div className="tbl-scroll">
-              <table className="data">
-                <thead>
-                  <tr>
-                    <th>Datum</th>
-                    <th>Ticker</th>
-                    <th>Tip</th>
-                    <th className="num">Količina</th>
-                    <th className="num">Cena (EUR)</th>
-                    <th className="num">Provizija</th>
-                    <th>Borza / Broker</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((tx) => (
-                    <tr key={tx.id}>
-                      <td>{new Date(tx.date).toLocaleDateString("sl-SI", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                      <td className="mono">{tx.asset}</td>
-                      <td>
-                        <span className={tx.type === "buy" ? "tag-buy" : tx.type === "staking" ? "tag-div" : "tag-sell"}>
-                          {getTypeLabel(tx.type)}
-                        </span>
-                      </td>
-                      <td className="num mono">{tx.amount.toFixed(4)}</td>
-                      <td className="num mono">{tx.price_eur.toFixed(2)}</td>
-                      <td className="num mono">{tx.fee_eur != null ? tx.fee_eur.toFixed(2) : "—"}</td>
-                      <td>{tx.broker || tx.exchange || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+              Prikaz{" "}
+              <strong style={{ color: "var(--ink)" }}>{offset + 1}–{offset + transactions.length}</strong>
+              {" "}od{" "}
+              <strong style={{ color: "var(--ink)" }}>{total}</strong> transakcij
+              {showGate && (
+                <span style={{ marginLeft: 12, color: "var(--warn)", fontWeight: 600 }}>
+                  · Brezplačni načrt: vidnih prvih {FREE_LIMIT}
+                </span>
+              )}
             </div>
-          </div>
-        )}
 
-        <div className="row between" style={{ marginTop: 18, fontSize: 13, color: "var(--muted)" }}>
-          <span>Prikazano <strong style={{ color: "var(--ink)" }}>{transactions.length}</strong> transakcij</span>
-          <a href="/reports" className="btn btn-line btn-sm">Generiraj XML poročilo →</a>
-        </div>
+            <div className="gate-wrapper">
+              <div className="tbl-wrap" style={{ position: "relative" }}>
+                <div className="tbl-scroll">
+                  <table className="data">
+                    <thead>
+                      <tr>
+                        <th>Datum</th>
+                        <th>Ticker</th>
+                        <th>Tip</th>
+                        <th className="num">Količina</th>
+                        <th className="num">Cena (EUR)</th>
+                        <th className="num">Provizija</th>
+                        <th>Borza / Broker</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((tx, idx) => {
+                        const gated = showGate && idx >= gatedFromIndex;
+                        const badge = getTypeBadge(tx.type);
+                        return (
+                          <tr
+                            key={tx.id}
+                            className={gated ? "tbl-blur-row" : undefined}
+                            aria-hidden={gated || undefined}
+                          >
+                            <td>{new Date(tx.date).toLocaleDateString("sl-SI", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                            <td className="mono">{tx.asset}</td>
+                            <td><span className={badge.cls}>{badge.label}</span></td>
+                            <td className="num mono">{tx.amount.toFixed(4)}</td>
+                            <td className="num mono">{tx.price_eur.toFixed(2)}</td>
+                            <td className="num mono">{tx.fee_eur != null ? tx.fee_eur.toFixed(2) : "—"}</td>
+                            <td>{tx.broker || tx.exchange || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Gate overlay — shown when at least some rows on this page are gated */}
+              {showGate && gatedFromIndex < transactions.length && (
+                <div className="gate-overlay">
+                  <div className="copy">
+                    <div className="ic">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4>Odklenite vse transakcije z DavkiNaDelnicah Pro</h4>
+                      <p>Brezplačni načrt prikazuje prvih {FREE_LIMIT} transakcij. Nadgradite za neomejen pregled in XML izvoz.</p>
+                    </div>
+                  </div>
+                  <a href="/cenik" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
+                    Nadgradi na Pro <span className="arr">→</span>
+                  </a>
+                </div>
+              )}
+
+              {/* Whole page is gated */}
+              {showGate && gatedFromIndex <= 0 && (
+                <div className="gate-overlay" style={{ marginTop: 0 }}>
+                  <div className="copy">
+                    <div className="ic">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4>Ta stran je zaklenjena za Pro načrt</h4>
+                      <p>Ogledujete si transakcije po prvih {FREE_LIMIT}. Nadgradite za dostop do vseh.</p>
+                    </div>
+                  </div>
+                  <a href="/cenik" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
+                    Nadgradi na Pro <span className="arr">→</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            <div className="pagination">
+              <span>
+                Stran <strong>{safePage}</strong> od <strong>{totalPages}</strong>
+              </span>
+              <div className="pages">
+                {safePage > 1 ? (
+                  <a href={pageParam(safePage - 1)} className="btn btn-line btn-sm">← Prej</a>
+                ) : (
+                  <button className="btn btn-line btn-sm" disabled>← Prej</button>
+                )}
+                {canGoNext ? (
+                  <a href={pageParam(safePage + 1)} className="btn btn-line btn-sm">Naslednja →</a>
+                ) : (
+                  <button
+                    className="btn btn-line btn-sm"
+                    disabled
+                    title={showGate ? "Nadgradi za dostop do več transakcij" : undefined}
+                  >
+                    Naslednja →
+                  </button>
+                )}
+              </div>
+              <a href="/reports" className="btn btn-ghost btn-sm">Generiraj XML →</a>
+            </div>
+          </>
+        )}
       </section>
     </main>
   );

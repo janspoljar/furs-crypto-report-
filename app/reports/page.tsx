@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { getFifoForUser } from "@/lib/fifo-server";
@@ -5,6 +6,10 @@ import TaxpayerProfileStatus from "@/components/taxpayer-profile-status";
 import DohKdvpExportForm from "@/components/doh-kdvp-export-form";
 import DohDivExportForm from "@/components/doh-div-export-form";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export const metadata: Metadata = {
+  title: "Poročila | DavkiNaDelnicah.si",
+};
 
 interface ReportsPageProps {
   searchParams: Promise<{ year?: string; debug?: string }>;
@@ -84,12 +89,22 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     <main>
       <section className="page-head">
         <div className="wrap">
-          <div className="row between" style={{ flexWrap: "wrap", gap: 16 }}>
+          <div className="row between" style={{ flexWrap: "wrap", gap: 16, alignItems: "flex-end" }}>
             <div>
               <h1>Davčna poročila</h1>
               <p>Pripravljena uradna poročila za eDavki, ločena po davčnem letu.</p>
             </div>
-            <span className="badge badge-free"><span className="dot" />Brezplačni načrt</span>
+            <div className="row gap-2" style={{ alignItems: "center" }}>
+              <span className="badge badge-free"><span className="dot" />Brezplačni načrt</span>
+              <form method="get" style={{ display: "inline-flex" }}>
+                <select className="select" name="year" defaultValue={yearFilter} style={{ width: "auto", minWidth: 110 }}>
+                  <option value="">Vsa leta</option>
+                  {sellYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                </select>
+                <button type="submit" className="btn btn-line btn-sm" style={{ marginLeft: 6 }}>Filtriraj</button>
+                {yearFilter && <a href="/reports" className="btn btn-ghost btn-sm" style={{ marginLeft: 4 }}>×</a>}
+              </form>
+            </div>
           </div>
         </div>
       </section>
