@@ -179,8 +179,8 @@ export default async function AccountPage() {
                     lineHeight: 1.55,
                   }}
                 >
-                  Brisanje računa je trajno in nepovrntljivo. Izbrisani bodo vsi vaši podatki,
-                  transakcije, naročnine in profil. Te operacije ni mogoče razveljaviti.
+                  Brisanje računa trajno izbriše vaše transakcije in davčne podatke, naročnino,
+                  davčni profil ter vse označene oddaje poročil. Te operacije ni mogoče razveljaviti.
                 </p>
                 <DeleteAccountSection />
               </div>

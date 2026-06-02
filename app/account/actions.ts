@@ -50,6 +50,15 @@ export async function deleteAccount(confirmText: string): Promise<{ error?: stri
     return { error: "Napaka pri brisanju naročnine: " + subError.message };
   }
 
+  const { error: submissionsError } = await supabaseAdmin
+    .from("report_submissions")
+    .delete()
+    .eq("user_id", userId);
+
+  if (submissionsError) {
+    return { error: "Napaka pri brisanju poročil: " + submissionsError.message };
+  }
+
   const { error: profileError } = await supabaseAdmin
     .from("profiles")
     .delete()
@@ -59,6 +68,10 @@ export async function deleteAccount(confirmText: string): Promise<{ error?: stri
   if (profileError && !profileError.message.includes("does not exist")) {
     console.error("deleteAccount: profiles delete error (non-fatal):", profileError.message);
   }
+
+  // Storage: no user-owned buckets exist yet. When Storage is added, delete user files here
+  // BEFORE auth.admin.deleteUser() — once the auth user is gone, service-role deletes by
+  // user_id path prefix still work, but RLS-based cleanup will not.
 
   const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 

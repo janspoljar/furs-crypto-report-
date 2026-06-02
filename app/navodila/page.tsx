@@ -267,8 +267,64 @@ export default function NavodilaPage() {
           </a>
         </div>
 
+        {/* Supported / limitations block */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: 16,
+          marginTop: 48,
+        }}>
+          <div style={{
+            background: "color-mix(in srgb, var(--pos) 6%, var(--surface))",
+            border: "1px solid color-mix(in srgb, var(--pos) 20%, transparent)",
+            borderRadius: "var(--r-lg)",
+            padding: "20px 22px",
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--pos)", marginBottom: 10, marginTop: 0 }}>
+              Trenutno podprto
+            </p>
+            <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 5 }}>
+              {[
+                "Trading 212, Revolut, IBKR",
+                "eToro, Binance, Coinbase, Kraken",
+                "DOH-KDVP XML za kapitalski dobiček",
+                "DOH-DIV pregled dividend",
+                "FIFO izračun po pravilih FURS",
+                "ECB tečaji za pretvorbo v EUR",
+              ].map((item) => (
+                <li key={item} style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div style={{
+            background: "color-mix(in srgb, var(--warn) 6%, var(--surface))",
+            border: "1px solid color-mix(in srgb, var(--warn) 25%, transparent)",
+            borderRadius: "var(--r-lg)",
+            padding: "20px 22px",
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--warn)", marginBottom: 10, marginTop: 0 }}>
+              Preverite pred oddajo
+            </p>
+            <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 5 }}>
+              {[
+                "Tuji odtegljaj davka pri dividendah (WHT) — prilagodite ročno",
+                "Manjkajoči CSV iz preteklih let — FIFO se izračuna samo iz uvoženih podatkov",
+                "Korporacijske akcije (spin-off, split) pri manj pogostih posrednikih",
+                "Kriptovalutne menjave (swap) imajo poseben davčni tretma",
+              ].map((item) => (
+                <li key={item} style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
         {/* Bottom nav links */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 40 }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 32 }}>
           <a href="/cenik" className="btn btn-primary btn-sm">
             Začni z izračunom <span className="arr">→</span>
           </a>

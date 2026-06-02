@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { APP_URL, buildMetadata, buildWebSiteJsonLd, buildOrganizationJsonLd } from "@/lib/seo";
 
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "podpora@davkinadelnicah.si";
+
 export const metadata: Metadata = buildMetadata({
   title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
   description:
@@ -355,13 +357,15 @@ export default function HomePage() {
               <h4>Podpora</h4>
               <a href="#faq">Vprašanja</a>
               <a href="/navodila">Navodila za uvoz</a>
-              <a href="mailto:podpora@davkinadelnicah.si">E-pošta</a>
+              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+              <span style={{ fontSize: 12, color: "var(--muted-2)", lineHeight: 1.5 }}>
+                Odziv v 1 delovnem dnevu
+              </span>
             </div>
             <div className="foot-col">
               <h4>Pravno</h4>
-              <a href="#">Splošni pogoji</a>
+              <a href="/terms">Pogoji uporabe</a>
               <a href="/privacy">Politika zasebnosti</a>
-              <a href="#">Piškotki</a>
             </div>
           </div>
 
@@ -385,6 +389,10 @@ export default function HomePage() {
             Kontakt: <a href="mailto:podpora@davkinadelnicah.si" style={{ color: "var(--muted)" }}>podpora@davkinadelnicah.si</a>
           </div>
 
+          <p style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 12 }}>
+            Uporabljamo samo nujne piškotke za prijavo in delovanje aplikacije — brez analitičnih
+            ali oglaševalskih piškotkov tretjih oseb.
+          </p>
           <div className="foot-bottom">
             <p>© {new Date().getFullYear()} DavkiNaDelnicah.si · Ni davčni svetovalec — informativni izračun.</p>
             <p>v1.4.0 · Slovenija</p>
