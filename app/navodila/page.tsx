@@ -1,29 +1,15 @@
 import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Navodila za izvoz CSV iz Trading 212, Revolut in IBKR | DavkiNaDelnicah.si",
   description:
     "Korak-po-korak navodila za izvoz transakcijskega izpiska iz Trading 212, Revolut, Interactive Brokers (IBKR), eToro, Binance in Coinbase za pripravo FURS davčne napovedi.",
-  alternates: { canonical: `${APP_URL}/navodila` },
-  openGraph: {
-    title: "Navodila za izvoz CSV iz Trading 212, Revolut in IBKR | DavkiNaDelnicah.si",
-    description:
-      "Korak-po-korak navodila za izvoz CSV izpiskov iz borznih posrednikov za pripravo DOH-KDVP davčne napovedi.",
-    url: `${APP_URL}/navodila`,
-    siteName: "DavkiNaDelnicah.si",
-    type: "website",
-    locale: "sl_SI",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Navodila za uvoz CSV" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Navodila za izvoz CSV iz Trading 212, Revolut in IBKR",
-    description: "Korak-po-korak navodila za izvoz CSV izpiskov iz borznih posrednikov.",
-    images: ["/og-image.png"],
-  },
-};
+  path: "/navodila",
+  shortDescription:
+    "Korak-po-korak navodila za izvoz CSV izpiskov iz borznih posrednikov za pripravo DOH-KDVP davčne napovedi.",
+  ogImageAlt: "Navodila za uvoz CSV",
+});
 
 interface BrokerGuide {
   id: string;

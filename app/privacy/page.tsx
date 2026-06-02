@@ -1,20 +1,12 @@
 import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Politika zasebnosti | DavkiNaDelnicah.si",
   description: "Informacije o obdelavi osebnih podatkov na DavkiNaDelnicah.si v skladu z GDPR.",
-  alternates: { canonical: `${APP_URL}/privacy` },
-  openGraph: {
-    title: "Politika zasebnosti | DavkiNaDelnicah.si",
-    description: "Informacije o obdelavi osebnih podatkov na DavkiNaDelnicah.si v skladu z GDPR.",
-    url: `${APP_URL}/privacy`,
-    siteName: "DavkiNaDelnicah.si",
-    type: "website",
-    locale: "sl_SI",
-  },
-};
+  path: "/privacy",
+  noOgImage: true,
+});
 
 // ⚠️ ZAMENJAJ vse vrednosti označene z [ZAMENJAJ] z resničnimi podatki pred objavo.
 

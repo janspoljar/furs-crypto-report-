@@ -2,31 +2,17 @@ import type { Metadata } from "next";
 import { getUserFromServer } from "@/lib/supabase/server";
 import { getSubscription } from "@/lib/subscription";
 import CheckoutButton from "./checkout-button";
+import { buildMetadata } from "@/lib/seo";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "Cenik — Pro načrt za FURS XML | DavkiNaDelnicah.si",
   description:
     "Pro načrt za 19 € letno: neomejene transakcije, DOH-KDVP in DOH-DIV XML za eDavki, pretekla davčna leta. Brez samodejne obnove.",
-  alternates: { canonical: `${APP_URL}/cenik` },
-  openGraph: {
-    title: "Cenik — Pro načrt za FURS XML | DavkiNaDelnicah.si",
-    description:
-      "19 € letno: DOH-KDVP in DOH-DIV XML za eDavki, neomejene transakcije, pretekla leta. Brez samodejne obnove.",
-    url: `${APP_URL}/cenik`,
-    siteName: "DavkiNaDelnicah.si",
-    type: "website",
-    locale: "sl_SI",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "DavkiNaDelnicah.si — Cenik" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Cenik — Pro načrt za FURS XML | DavkiNaDelnicah.si",
-    description: "19 € letno: DOH-KDVP in DOH-DIV XML za eDavki, neomejene transakcije.",
-    images: ["/og-image.png"],
-  },
-};
+  path: "/cenik",
+  shortDescription:
+    "19 € letno: DOH-KDVP in DOH-DIV XML za eDavki, neomejene transakcije, pretekla leta. Brez samodejne obnove.",
+  ogImageAlt: "DavkiNaDelnicah.si — Cenik",
+});
 
 const CENIK_FAQS = [
   { q: "Ali se naročnina obnovi samodejno?", a: "Ne. Pro velja 12 mesecev po plačilu in se ne obnovi samodejno. Po izteku te bomo opomnili — sam se odločiš, ali plačaš naslednje leto." },

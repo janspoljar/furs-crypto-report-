@@ -1,40 +1,14 @@
 import type { Metadata } from "next";
+import { APP_URL, buildMetadata, buildWebSiteJsonLd, buildOrganizationJsonLd } from "@/lib/seo";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
   description:
     "Uvozite CSV iz Trading 212, Revolut ali IBKR, izračunajte FIFO kapitalski dobiček in generirajte XML za eDavki (DOH-KDVP, DOH-DIV). Za slovenske vlagatelje.",
-  metadataBase: new URL(APP_URL),
-  alternates: {
-    canonical: APP_URL,
-  },
-  openGraph: {
-    title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
-    description:
-      "Uvozite CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. DOH-KDVP in DOH-DIV XML za eDavki v minutah.",
-    url: APP_URL,
-    siteName: "DavkiNaDelnicah.si",
-    type: "website",
-    locale: "sl_SI",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
-    description:
-      "Uvozite CSV iz Trading 212, Revolut ali IBKR. FIFO izračun. XML za eDavki v minutah.",
-    images: ["/og-image.png"],
-  },
-};
+  shortDescription:
+    "Uvozite CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. DOH-KDVP in DOH-DIV XML za eDavki v minutah.",
+  ogImageAlt: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+});
 
 function CheckIcon() {
   return (
@@ -111,16 +85,13 @@ const JSON_LD_FAQ = {
 };
 
 export default function HomePage() {
+  const orgJsonLd = buildOrganizationJsonLd();
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_APP) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_FAQ) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_APP) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_FAQ) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildWebSiteJsonLd()) }} />
+      {orgJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />}
 
       {/* HERO */}
       <section className="hero-mkt">
