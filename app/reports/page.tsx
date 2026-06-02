@@ -6,7 +6,10 @@ import { getSubscription } from "@/lib/subscription";
 import TaxpayerProfileStatus from "@/components/taxpayer-profile-status";
 import DohDivExportForm from "@/components/doh-div-export-form";
 import ReportCardActions from "@/components/report-card-actions";
+import MarkSubmittedButton from "@/components/mark-submitted-button";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getTaxpayerProfile } from "@/lib/supabase/profile";
+import { getReportSubmissions } from "@/lib/supabase/submissions";
 
 export const metadata: Metadata = {
   title: "Poročila | DavkiNaDelnicah.si",
@@ -55,7 +58,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const subscription = await getSubscription(user.id);
   const isPro = subscription.isPro;
 
-  const { fifo } = await getFifoForUser(user.id);
+  const [{ fifo }, profile, submissionsMap] = await Promise.all([
+    getFifoForUser(user.id),
+    getTaxpayerProfile(user.id).catch(() => null),
+    isPro ? getReportSubmissions(user.id).catch(() => new Map<number, Date>()) : Promise.resolve(new Map<number, Date>()),
+  ]);
+
+  const hasTaxNumber = !!(profile?.taxNumber);
 
   // N2: negative inventory detection
   const negativeInventoryAssets = Array.from(
@@ -377,7 +386,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                     <div className="v" style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500 }}>FIFO</div>
                   </div>
                 </div>
-                <ReportCardActions year={row.year} isPro={isPro} negativeInventoryAssets={negativeInventoryAssets} />
+                <ReportCardActions
+                  year={row.year}
+                  isPro={isPro}
+                  negativeInventoryAssets={negativeInventoryAssets}
+                  hasTaxNumber={hasTaxNumber}
+                />
+                {isPro && (
+                  <MarkSubmittedButton
+                    year={row.year}
+                    initialSubmittedAt={submissionsMap.get(row.year)?.toISOString() ?? null}
+                  />
+                )}
                 {!isPro && (
                   <div className="lock-tip">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -430,6 +450,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           >
             Pomoč za uvoz dokumentov na eDavki ↗
           </a>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)", fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+            Ko v eDavkih zaključite uvoz, se po potrebi vrnite nazaj sem in označite poročilo kot oddano na posamezni kartici zgoraj.
+          </div>
         </div>
 
         {/* Taxpayer profile status — shown always so user knows what to fill */}

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/supabase/server";
 import { getSubscription } from "@/lib/subscription";
+import { getTaxpayerProfile } from "@/lib/supabase/profile";
 import SignOutButton from "./sign-out-button";
 import PasswordResetForm from "./password-reset-form";
 import DeleteAccountSection from "./delete-account-section";
+import TaxpayerProfileForm from "@/components/taxpayer-profile-form";
 
 export const metadata: Metadata = {
   title: "Moj račun — DavkiNaDelnicah.si",
@@ -21,7 +23,10 @@ function formatDate(date: Date | null): string {
 
 export default async function AccountPage() {
   const user = await requireUser();
-  const subscription = await getSubscription(user.id);
+  const [subscription, taxpayerProfile] = await Promise.all([
+    getSubscription(user.id),
+    getTaxpayerProfile(user.id).catch(() => null),
+  ]);
 
   return (
     <main className="wrap" style={{ paddingBottom: 64 }}>
@@ -110,6 +115,15 @@ export default async function AccountPage() {
               </div>
             </div>
           )}
+        </section>
+
+        {/* --- Davčni podatki --- */}
+        <section className="panel">
+          <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>Davčni podatki</h2>
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16, marginTop: 0, lineHeight: 1.5 }}>
+            Potrebni za generiranje DOH-KDVP XML in neposreden prenos v eDavke. Davčna številka mora biti 8-mestna slovenska identifikacijska številka.
+          </p>
+          <TaxpayerProfileForm initialData={taxpayerProfile} />
         </section>
 
         {/* --- Varnost --- */}

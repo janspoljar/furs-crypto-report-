@@ -7,6 +7,11 @@ import { buildDohKdvpDraftFromExport, serializeDohKdvpDraftToXml } from "@/lib/d
 import { getTaxpayerProfile } from "@/lib/supabase/profile";
 import { validateDohKdvp, type XmlValidationResult } from "@/lib/xml-validator";
 import { getSubscription } from "@/lib/subscription";
+import {
+  getReportSubmissions,
+  upsertReportSubmission,
+  deleteReportSubmission,
+} from "@/lib/supabase/submissions";
 
 export interface ValidateXmlResult {
   ok: boolean;
@@ -54,13 +59,39 @@ export async function validateReportXml(year: number): Promise<ValidateXmlResult
       xmlPreview: null,
       error: null,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       ok: false,
       gated: false,
       validation: null,
       xmlPreview: null,
-      error: err?.message ?? "Neznana napaka.",
+      error: err instanceof Error ? err.message : "Neznana napaka.",
     };
+  }
+}
+
+export interface ToggleSubmissionResult {
+  submittedAt: string | null;
+}
+
+export async function toggleReportSubmission(
+  year: number
+): Promise<ToggleSubmissionResult> {
+  const user = await requireUser();
+
+  const subscription = await getSubscription(user.id);
+  if (!subscription.isPro) {
+    throw new Error("Pro naročnina je potrebna.");
+  }
+
+  const existing = await getReportSubmissions(user.id);
+  const currentSubmittedAt = existing.get(year);
+
+  if (currentSubmittedAt) {
+    await deleteReportSubmission(user.id, year);
+    return { submittedAt: null };
+  } else {
+    await upsertReportSubmission(user.id, year);
+    return { submittedAt: new Date().toISOString() };
   }
 }

@@ -7,17 +7,17 @@ interface Props {
   year: number;
   isPro: boolean;
   negativeInventoryAssets: string[];
+  hasTaxNumber: boolean;
 }
 
 type State = "idle" | "validating" | "valid" | "warning" | "error";
 
-export default function ReportCardActions({ year, isPro, negativeInventoryAssets }: Props) {
+export default function ReportCardActions({ year, isPro, negativeInventoryAssets, hasTaxNumber }: Props) {
   const [state, setState] = useState<State>("idle");
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [showEdavkiInfo, setShowEdavkiInfo] = useState(false);
 
   function handleValidate() {
     startTransition(async () => {
@@ -91,31 +91,15 @@ export default function ReportCardActions({ year, isPro, negativeInventoryAssets
           <p>Popravi napako pred izvozom (glejte rdeče opozorilo na vrhu strani).</p>
         </div>
 
-        {/* TASK 4: eDavki CTA — also shown in blocked state */}
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => setShowEdavkiInfo(v => !v)}
-          style={{ alignSelf: "flex-start", fontSize: 12, color: "var(--muted)" }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Prenesi v eDavke {showEdavkiInfo ? "▲" : "▼"}
-        </button>
-        {showEdavkiInfo && (
-          <div style={{
-            background: "var(--surface)", border: "1px solid var(--line)",
-            borderRadius: "var(--r-md)", padding: "14px 16px", fontSize: 13,
-          }}>
-            <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 13 }}>
-              Prihaja kmalu — neposreden prenos v eDavke
-            </div>
-            <p style={{ margin: "0 0 8px", color: "var(--muted)", lineHeight: 1.5 }}>
-              eDavki podpirajo neposreden uvoz iz zunanjih aplikacij. Funkcija bo omogočila hitrejši prehod brez ročnega prenosa XML.
-            </p>
-            <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.5 }}>
-              Zaenkrat prenesite XML datoteko in jo ročno uvozite po navodilih spodaj.
-            </p>
-          </div>
-        )}
+        {/* eDavki CTA — disabled in blocked state */}
+        <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 5 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Neposreden prenos ni mogoč, dokler XML ni veljaven
+        </div>
       </div>
     );
   }
@@ -211,29 +195,29 @@ export default function ReportCardActions({ year, isPro, negativeInventoryAssets
         </div>
       )}
 
-      {/* TASK 4: Prenesi v eDavke CTA — always visible to Pro users */}
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => setShowEdavkiInfo(v => !v)}
-        style={{ alignSelf: "flex-start", fontSize: 12, color: "var(--muted)" }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        Prenesi v eDavke {showEdavkiInfo ? "▲" : "▼"}
-      </button>
-      {showEdavkiInfo && (
-        <div style={{
-          background: "var(--surface)", border: "1px solid var(--line)",
-          borderRadius: "var(--r-md)", padding: "14px 16px", fontSize: 13,
-        }}>
-          <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 13 }}>
-            Prihaja kmalu — neposreden prenos v eDavke
-          </div>
-          <p style={{ margin: "0 0 8px", color: "var(--muted)", lineHeight: 1.5 }}>
-            eDavki podpirajo neposreden uvoz iz zunanjih aplikacij. Funkcija bo omogočila hitrejši prehod brez ročnega prenosa XML.
-          </p>
-          <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.5 }}>
-            Zaenkrat prenesite XML datoteko in jo ročno uvozite po navodilih spodaj.
-          </p>
+      {/* Direct eDavki import CTA */}
+      {hasTaxNumber ? (
+        <a
+          href={`/reports/edavki-import?year=${year}`}
+          className="btn btn-line btn-sm"
+          style={{ alignSelf: "flex-start", fontSize: 12 }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Prenesi v eDavke
+        </a>
+      ) : (
+        <div style={{ fontSize: 12, color: "var(--warn)", display: "flex", alignItems: "center", gap: 5 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Davčna številka manjka —{" "}
+          <a href="/account" style={{ color: "inherit", textDecoration: "underline" }}>Dopolni podatke</a>
         </div>
       )}
     </div>
