@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sendProWelcomeEmail } from "@/lib/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-05-27.dahlia",
@@ -52,6 +53,11 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("[stripe/webhook] Supabase upsert error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const customerEmail = session.customer_details?.email || session.customer_email;
+    if (customerEmail) {
+      await sendProWelcomeEmail({ to: customerEmail, validUntil: validUntil.toISOString() });
     }
 
     console.log(`[stripe/webhook] Pro activated for user ${userId} until ${validUntil.toISOString()}`);

@@ -39,7 +39,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  const pathname = request.nextUrl.pathname;
+  if (user && pathname === '/login') {
+    const returnUrl = request.nextUrl.searchParams.get('returnUrl') || '/upload';
+    return NextResponse.redirect(new URL(returnUrl, request.url));
+  }
 
   return response;
 }

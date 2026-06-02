@@ -89,10 +89,12 @@ function AuthHeader({ pathname, userEmail }: { pathname: string; userEmail?: str
 
         {/* Desktop nav */}
         <nav className="primary">
+          {tab("/dashboard", "Nadzorna plošča")}
           {tab("/upload", "Naloži")}
           {tab("/transactions", "Transakcije")}
           {tab("/reports", "Poročila")}
           {tab("/cenik", "Cenik")}
+          {tab("/account", "Račun")}
         </nav>
 
         <div className="right">
@@ -100,10 +102,10 @@ function AuthHeader({ pathname, userEmail }: { pathname: string; userEmail?: str
 
           {/* Desktop user chip */}
           {userEmail ? (
-            <button className="user-chip hidden-mobile" onClick={handleSignOut} title="Odjavi se" style={{ cursor: "pointer" }}>
+            <a href="/account" className="user-chip hidden-mobile" title="Moj račun" style={{ cursor: "pointer", textDecoration: "none" }}>
               <span className="av">{initials}</span>
               <span>{userEmail}</span>
-            </button>
+            </a>
           ) : (
             <a href="/login" className="btn btn-ghost btn-sm hidden-mobile">Prijava</a>
           )}
@@ -143,10 +145,12 @@ function AuthHeader({ pathname, userEmail }: { pathname: string; userEmail?: str
         </div>
 
         <nav>
+          {tab("/dashboard", "Nadzorna plošča")}
           {tab("/upload", "Naloži izpisek")}
           {tab("/transactions", "Transakcije")}
           {tab("/reports", "Poročila")}
           {tab("/cenik", "Cenik")}
+          {tab("/account", "Moj račun")}
         </nav>
 
         <div className="drawer-foot">
