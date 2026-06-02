@@ -141,6 +141,9 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
     new Set((allTx || []).map((t) => t.broker).filter(Boolean) as string[])
   ).sort();
 
+  const CRYPTO_BROKERS = new Set(["binance", "coinbase", "kraken", "bitstamp"]);
+  const cryptoBrokersDetected = uniqueBrokers.filter((b) => CRYPTO_BROKERS.has(b.toLowerCase()));
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2021 }, (_, i) => currentYear - i);
 
@@ -179,6 +182,22 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
       </section>
 
       <section className="wrap" style={{ paddingBottom: 80 }}>
+        {/* N3: ECB badge for crypto brokers */}
+        {cryptoBrokersDetected.length > 0 && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: "var(--surface)", border: "1px solid var(--line)",
+            borderRadius: "var(--r-md)", padding: "10px 16px",
+            marginBottom: 20, fontSize: 13, color: "var(--muted)",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, color: "var(--accent)" }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>
+              <strong style={{ color: "var(--ink)" }}>Pretvorjeno po ECB</strong>
+              {" "}— Transakcije iz {cryptoBrokersDetected.join(", ")} so pretvorjene v EUR po referenčnem tečaju ECB na datum transakcije.
+            </span>
+          </div>
+        )}
+
         {/* FIFO summary stats */}
         <div className="admin-stats" style={{ marginBottom: 24 }}>
           <div className="admin-stat">

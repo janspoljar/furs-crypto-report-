@@ -228,6 +228,10 @@ export default function HomePage() {
               <a className="btn btn-primary cta" href="/cenik">Nadgradi na Pro</a>
             </div>
           </div>
+          {/* N5: Honest note for small users */}
+          <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+            Imate manj kot 10 transakcij letno? Vnos v eDavke je pogosto mogoč tudi ročno — brezplačni načrt vam pomaga pri izračunu.
+          </p>
         </div>
       </section>
 

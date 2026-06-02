@@ -49,6 +49,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   const { fifo } = await getFifoForUser(user.id);
 
+  // N2: negative inventory detection
+  const negativeInventoryAssets = Array.from(
+    new Set(
+      fifo.sales.filter((s) => s.unmatchedQuantity > 1e-8).map((s) => s.asset)
+    )
+  ).sort();
+
   const sellYears = Array.from(
     new Set(fifo.sales.map((sale) => sale.date.getFullYear()))
   ).sort((a, b) => b - a);
@@ -70,20 +77,38 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     return { year, sellCount: yearSales.length, totalGrossProceeds, totalNetProceeds, totalGrossCost, totalNetCost, realizedProfit, realizedLoss, netRealized, taxEstimate };
   });
 
-  // Leta z dividendami (za DOH-DIV formo)
+  // Leta z dividendami + N4 withholding tax check
   let divYears: number[] = [];
+  let hasStakingWithoutWithholding = false;
   try {
     const { data: divData } = await supabaseAdmin
       .from("transactions")
-      .select("date")
+      .select("date, fee_eur")
       .eq("user_id", user.id)
       .eq("type", "staking")
       .order("date", { ascending: true });
     if (divData && divData.length > 0) {
       divYears = Array.from(new Set(divData.map((d) => new Date(d.date).getFullYear()))).sort((a, b) => b - a);
+      hasStakingWithoutWithholding = divData.some((d) => d.fee_eur === null || d.fee_eur === undefined);
     }
   } catch {
     // ni kritično — DOH-DIV forma bo prazna
+  }
+
+  // N3: ECB broker detection
+  const CRYPTO_BROKER_NAMES = new Set(["binance", "coinbase", "kraken", "bitstamp"]);
+  let hasCryptoBroker = false;
+  try {
+    const { data: brokerRows } = await supabaseAdmin
+      .from("transactions")
+      .select("broker")
+      .eq("user_id", user.id)
+      .not("broker", "is", null);
+    hasCryptoBroker = (brokerRows || []).some(
+      (r) => r.broker && CRYPTO_BROKER_NAMES.has((r.broker as string).toLowerCase())
+    );
+  } catch {
+    // non-critical
   }
 
   const totalSells = fifo.sales.length;
@@ -132,6 +157,30 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {/* Year cards — DOH-KDVP */}
         <h2 className="h-3" style={{ margin: "28px 0 14px" }}>Doh-KDVP — Kapitalski dobiček od vrednostnih papirjev</h2>
 
+        {/* N2: Negative inventory hard error */}
+        {negativeInventoryAssets.length > 0 && (
+          <div className="val-error" style={{ marginBottom: 20, padding: "16px 20px", borderRadius: "var(--r-md)" }}>
+            <div className="val-head" style={{ fontSize: 14, marginBottom: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Negativna zaloga — XML izvoz blokiran
+            </div>
+            <p style={{ margin: "0 0 10px", fontSize: 13 }}>
+              Naslednji ticker{negativeInventoryAssets.length > 1 ? "ji imajo" : " ima"} prodaje brez ustreznih nakupov:{" "}
+              <strong>{negativeInventoryAssets.join(", ")}</strong>.
+              To onemogoči pravilen FIFO izračun.
+            </p>
+            <p style={{ margin: "0 0 10px", fontSize: 13 }}>Možni vzroki:</p>
+            <ul style={{ margin: "0 0 12px", paddingLeft: 20, fontSize: 13 }}>
+              <li>Manjkajoči CSV izpiski za pretekla leta</li>
+              <li>Napačen vrstni red transakcij pri uvozu</li>
+              <li>Nezaznani delniški split (stock split)</li>
+            </ul>
+            <a href="/navodila" style={{ fontSize: 13, color: "var(--error)", fontWeight: 600 }}>
+              Navodila za uvoz in odpravo napak →
+            </a>
+          </div>
+        )}
+
         {annualSummary.length === 0 ? (
           <div className="empty">
             <h3>Ni poročil</h3>
@@ -168,7 +217,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                     <div className="v" style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 500 }}>FIFO</div>
                   </div>
                 </div>
-                <ReportCardActions year={row.year} isPro={isPro} />
+                <ReportCardActions year={row.year} isPro={isPro} negativeInventoryAssets={negativeInventoryAssets} />
                 {!isPro && (
                   <div className="lock-tip">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -179,6 +228,40 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             ))}
           </div>
         )}
+
+        {/* N3: ECB info line for crypto users */}
+        {hasCryptoBroker && (
+          <div style={{
+            display: "flex", alignItems: "flex-start", gap: 10,
+            background: "var(--surface)", border: "1px solid var(--line)",
+            borderRadius: "var(--r-md)", padding: "12px 16px",
+            marginTop: 20, fontSize: 13, color: "var(--muted)",
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>Vrednosti so pretvorjene v EUR po referenčnem tečaju ECB na datum transakcije.</span>
+          </div>
+        )}
+
+        {/* N1: How to import to eDavki */}
+        <div style={{
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg)", padding: "20px 24px",
+          marginTop: 28,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--accent)", flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <strong style={{ fontSize: 14 }}>Kako uvozim datoteko v eDavki?</strong>
+          </div>
+          <ol style={{ margin: "0 0 14px", paddingLeft: 20, fontSize: 13, lineHeight: 1.8, color: "var(--ink)" }}>
+            <li>Odpri <strong>eDavki</strong> → <strong>Dokumenti</strong> → <strong>Uvoz dokumentov</strong></li>
+            <li>Klikni gumb <strong>Uvozi dokument</strong></li>
+            <li>Izberi XML datoteko, ki si jo pravkar prenesel</li>
+            <li>Klikni <strong>Oddaj</strong> in preveri morebitna opozorila</li>
+          </ol>
+          <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+            Oba DOH-KDVP in DOH-DIV uporabljata splošni XML uvoz. Ob napaki preverite opozorila pri uvoženi datoteki v eDavkah.
+          </p>
+        </div>
 
         {/* Taxpayer profile status — shown always so user knows what to fill */}
         <div style={{ marginTop: 32 }}>
@@ -197,6 +280,30 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
         {divYears.length > 0 && (
           <div style={{ marginTop: 24 }}>
+            {/* N4: Withholding tax explanation */}
+            <div style={{
+              background: "var(--surface)", border: "1px solid var(--line)",
+              borderRadius: "var(--r-md)", padding: "16px 20px", marginBottom: 16,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--accent)", flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <strong style={{ fontSize: 13 }}>Odtegnjeni davek (WHT)</strong>
+              </div>
+              <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                Ko je tuj posrednik obračunal davek pri izplačilu dividende ali stakinga, smo ta znesek zabeležili v stolpcu Provizija. FURS ta znesek upošteva pri izračunu dohodnine po sporazumu o izogibanju dvojnega obdavčevanja.
+              </p>
+              {hasStakingWithoutWithholding && (
+                <div style={{
+                  display: "flex", alignItems: "flex-start", gap: 8,
+                  background: "var(--warn-tint, #fffbeb)", border: "1px solid var(--warn)",
+                  borderRadius: "var(--r-sm)", padding: "10px 14px", marginTop: 10,
+                  fontSize: 13, color: "var(--warn-ink, #92400e)",
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span>Nekatere staking/dividendne transakcije nimajo podatka o odtegnjenem davku. Preverite izpisek posrednika in ročno dopolnite, če je bil davek odtegnjen.</span>
+                </div>
+              )}
+            </div>
             <DohDivExportForm availableYears={divYears} />
           </div>
         )}
