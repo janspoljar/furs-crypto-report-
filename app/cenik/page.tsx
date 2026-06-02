@@ -1,0 +1,111 @@
+const CENIK_FAQS = [
+  { q: "Ali se naročnina obnovi samodejno?", a: "Ne. Pro velja 12 mesecev po plačilu in se ne obnovi samodejno. Po izteku te bomo opomnili — sam se odločiš, ali plačaš naslednje leto." },
+  { q: "Ali lahko dobim račun za pravno osebo?", a: "Da. Pri plačilu lahko vneseš podatke podjetja (naziv, naslov, davčno številko) — račun prejmeš avtomatsko po e-pošti." },
+  { q: "Kaj se zgodi z mojimi podatki, če odpovem Pro?", a: "Tvoja že generirana poročila in zgodovina ostanejo dostopni. Naloženi izpiski za prihodnja leta bodo padli pod omejitev 200 transakcij brezplačnega načrta." },
+  { q: "Ponujate vračilo, če mi izračun ne ustreza?", a: "Da, 30-dnevno polno vračilo brez vprašanj. Piši na podpora@davkinadelnicah.si in vrnemo plačilo." },
+  { q: "Ali Pro vključuje davčno svetovanje?", a: "Ne. Pro je naročnina na orodje za izračun in pripravo XML datoteke. Za individualno davčno svetovanje priporočamo davčnega svetovalca." },
+];
+
+function CheckIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pos)" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" strokeWidth="2" strokeLinecap="round">
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+export default function CenikPage() {
+  return (
+    <main>
+      <section className="section">
+        <div className="wrap">
+          <div className="pricing-head reveal">
+            <span className="eyebrow" style={{ justifyContent: "center" }}>Cenik</span>
+            <h1 className="h-1">Pošteno. Letno. Brez naročnine.</h1>
+            <p>Plačaš 19 € za eno davčno leto. Brez samodejne obnove, brez skritih stroškov.</p>
+          </div>
+
+          <div className="compare-grid">
+            <div className="compare-col reveal">
+              <div className="head">
+                <h3>Brezplačno</h3>
+                <span className="price">0&nbsp;€</span>
+              </div>
+              <p className="muted" style={{ fontSize: 14 }}>Za preverjanje stanja in pregled portfelja.</p>
+              <ul>
+                <li><CheckIcon /> Do 200 transakcij</li>
+                <li><CheckIcon /> Samodejno prepoznavanje posrednika</li>
+                <li><CheckIcon /> Pregled dobička in izgube</li>
+                <li><CheckIcon /> Predogled razčlenitve po FIFO</li>
+                <li className="no"><XIcon /> Doh-KDVP XML izvoz</li>
+                <li className="no"><XIcon /> Doh-Div poročilo</li>
+                <li className="no"><XIcon /> Pretekla davčna leta (pred 2024)</li>
+              </ul>
+              <button className="btn btn-line cta" disabled>Trenutni načrt</button>
+            </div>
+
+            <div className="compare-col pro reveal d1">
+              <span className="ribbon">Priporočeno</span>
+              <div className="head">
+                <h3>Pro</h3>
+                <span className="price">19&nbsp;€<small>/davčno leto</small></span>
+              </div>
+              <p className="muted" style={{ fontSize: 14 }}>Vse, kar potrebuješ za oddajo napovedi v eDavki.</p>
+              <ul>
+                <li><CheckIcon /> <strong>Neomejeno</strong> transakcij</li>
+                <li><CheckIcon /> Doh-KDVP XML za neposreden uvoz v eDavki</li>
+                <li><CheckIcon /> Doh-Div poročilo za dividende</li>
+                <li><CheckIcon /> Pretekla davčna leta (do 5 let nazaj)</li>
+                <li><CheckIcon /> Razčlenitev po FIFO z izvirnimi nakupi</li>
+                <li><CheckIcon /> E-poštna podpora v 24 urah</li>
+                <li><CheckIcon /> Brez samodejne obnove naročnine</li>
+              </ul>
+              <a className="btn btn-primary cta" href="#">
+                Plačaj 19 € · enkratno <span className="arr">→</span>
+              </a>
+            </div>
+          </div>
+
+          <p className="text-center muted" style={{ marginTop: 24, fontSize: 13.5 }}>
+            Plačilo prek Stripe · SEPA, kreditna kartica · 30-dnevna garancija vračila
+          </p>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="text-center reveal" style={{ maxWidth: "36em", margin: "0 auto 36px" }}>
+            <span className="eyebrow" style={{ justifyContent: "center" }}>FAQ</span>
+            <h2 className="h-1" style={{ marginTop: 18 }}>Vprašanja o ceniku</h2>
+          </div>
+          <div className="faq-list">
+            {CENIK_FAQS.map((item, i) => (
+              <div className="faq-item reveal" key={i}>
+                <button className="faq-q">
+                  {item.q}
+                  <span className="pm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </span>
+                </button>
+                <div className="faq-a">
+                  <div className="inner">{item.a}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

@@ -61,6 +61,7 @@ export async function parseBinanceCsv(csvText: string): Promise<Transaction[]> {
       id: `binance-${i}-${date.getTime()}`,
       date,
       type,
+      assetType: "crypto" as const,
       asset: base,
       amount,
       priceEur: quote === "EUR" ? price : 0,

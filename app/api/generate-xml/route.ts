@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getAuthenticatedUser } from "@/lib/supabase/route-handler";
+import { getTaxpayerProfile } from "@/lib/supabase/profile";
 import { runFifo } from "@/lib/fifo";
 import { generateXml } from "@/lib/xmlGenerator";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const userId = body.userId as string | undefined;
-    const targetYear = Number(body.targetYear);
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Manjka userId." },
-        { status: 400 }
-      );
+    const { user: authUser, error: authError } = await getAuthenticatedUser();
+    if (authError || !authUser?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const body = await req.json();
+    const targetYear = Number(body.targetYear);
+    const userId = authUser.id;
 
     if (!Number.isInteger(targetYear) || targetYear < 2000 || targetYear > 2100) {
       return NextResponse.json(
@@ -23,11 +23,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = {
-      tax_number: "SI12345678",
-      name: "Test User",
-      address: "Test naslov 1",
-    };
+    const profile = await getTaxpayerProfile(userId);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Najprej izpolni davčni profil." },
+        { status: 400 }
+      );
+    }
 
     const { data: transactions, error: txError } = await supabaseAdmin
       .from("transactions")
@@ -74,9 +76,9 @@ export async function POST(req: Request) {
     };
 
     const xml = generateXml(filteredResult, {
-      taxNumber: user.tax_number,
-      name: user.name,
-      address: user.address,
+      taxNumber: profile.taxNumber,
+      name: profile.fullName,
+      address: `${profile.address}, ${profile.postalCode} ${profile.city}`,
       year: targetYear,
     });
 

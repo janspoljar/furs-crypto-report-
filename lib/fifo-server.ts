@@ -15,7 +15,7 @@ interface DbTransactionRow {
 
 export async function getFifoForUser(userId: string, asset?: string): Promise<{ fifo: FifoResult; transactions: FifoTransaction[] }> {
   const query = supabaseAdmin
-    .from<DbTransactionRow>("transactions")
+    .from("transactions")
     .select("id,date,type,asset,amount,price_eur,fee_eur,exchange,note")
     .eq("user_id", userId)
     .order("date", { ascending: true });

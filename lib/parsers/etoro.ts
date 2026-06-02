@@ -16,7 +16,7 @@ function normalizeType(rawType: string): Transaction["type"] {
 
   if (value.includes("buy")) return "buy";
   if (value.includes("sell")) return "sell";
-  if (value.includes("dividend")) return "dividend";
+  if (value.includes("dividend")) return "staking";
   if (value.includes("transfer")) return "transfer";
 
   return "transfer";
@@ -59,7 +59,7 @@ export async function parseEtoroCsv(csvText: string): Promise<Transaction[]> {
       priceEur = units !== 0 ? Math.abs(amount / units) : 0;
     }
 
-    if (type === "dividend") {
+    if (type === "staking") {
       priceEur = Math.abs(realized || amount);
     }
 
@@ -69,7 +69,7 @@ export async function parseEtoroCsv(csvText: string): Promise<Transaction[]> {
       type,
       assetType: normalizeAssetType(row.Type || "", asset),
       asset,
-      amount: type === "dividend" ? 1 : Math.abs(units),
+      amount: type === "staking" ? 1 : Math.abs(units),
       priceEur,
       feeEur: Math.abs(fee),
       broker: "etoro",

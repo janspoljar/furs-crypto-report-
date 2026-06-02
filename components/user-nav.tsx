@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import AuthButton from "./auth-button";
 
 export default function UserNav({ initialUser }: { initialUser: { id: string; email?: string } | null }) {
   const supabase = createClient();
@@ -34,10 +33,16 @@ export default function UserNav({ initialUser }: { initialUser: { id: string; em
     );
   }
 
+  async function signOut() {
+    setLoading(true);
+    await supabase.auth.signOut();
+    setLoading(false);
+  }
+
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
       <div>{user.email || user.id}</div>
-      <AuthButton initialLoggedIn={true} />
+      <button onClick={signOut}>Odjava</button>
     </div>
   );
 }

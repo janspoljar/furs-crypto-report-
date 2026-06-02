@@ -11,6 +11,11 @@ function jsonError(error: string, status = 500) {
   });
 }
 
+// Stolpci ki so vedno prisotni v transactions tabeli
+const BASE_COLUMNS = "id,date,type,asset,amount,price_eur,fee_eur,exchange";
+// Opcijski stolpci ki so bili dodani kasneje — fallback jih izpusti
+const OPTIONAL_COLUMNS = "isin,country_code,payer_name,withholding_tax_eur";
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -25,27 +30,30 @@ export async function GET(request: Request) {
     const { user } = await getAuthenticatedUser();
     if (!user) return jsonError("Niste prijavljeni", 401);
 
-    // Preberi staking/dividend transakcije za tega uporabnika
+    // Najprej poskusi s polnimi stolpci (vključno z opcijskimi DOH-DIV polji)
     const { data, error: dbError } = await supabaseAdmin
       .from("transactions")
-      .select("id,date,type,asset,amount,price_eur,fee_eur,exchange,broker,isin,country_code,payer_name,withholding_tax_eur")
+      .select(`${BASE_COLUMNS},${OPTIONAL_COLUMNS}`)
       .eq("user_id", user.id)
       .eq("type", "staking")
       .order("date", { ascending: true });
 
-    // Fallback: če stolpci isin/country_code/payer_name/withholding_tax_eur ne obstajajo še v DB
     let transactions: DivTransaction[];
-    if (dbError && (dbError.message?.includes("isin") || dbError.message?.includes("country_code"))) {
+
+    if (dbError) {
+      // Opcijski stolpci še ne obstajajo v DB — fallback na bazne stolpce
       const { data: fallback, error: fallbackErr } = await supabaseAdmin
         .from("transactions")
-        .select("id,date,type,asset,amount,price_eur,fee_eur,exchange,broker")
+        .select(BASE_COLUMNS)
         .eq("user_id", user.id)
         .eq("type", "staking")
         .order("date", { ascending: true });
-      if (fallbackErr) return jsonError(`Napaka pri branju transakcij: ${fallbackErr.message}`);
+
+      if (fallbackErr) {
+        return jsonError(`Napaka pri branju transakcij: ${fallbackErr.message}`);
+      }
       transactions = (fallback ?? []) as DivTransaction[];
     } else {
-      if (dbError) return jsonError(`Napaka pri branju transakcij: ${dbError.message}`);
       transactions = (data ?? []) as DivTransaction[];
     }
 
@@ -75,8 +83,9 @@ export async function GET(request: Request) {
     headers.set("Content-Disposition", `attachment; filename="Doh_Div_${year}.xml"`);
     return new NextResponse(xml, { headers });
 
-  } catch (err: any) {
-    console.error("/api/reports/doh-div error:", err);
-    return jsonError(err?.message ?? "Interna napaka strežnika");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Interna napaka strežnika";
+    console.error("/api/reports/doh-div error:", msg);
+    return jsonError(msg);
   }
 }
