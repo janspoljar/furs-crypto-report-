@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AppHeader from "@/components/app-header";
+import RevealInit from "@/components/reveal-init";
 
 export const metadata: Metadata = {
   title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
@@ -13,31 +14,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-<<<<<<< HEAD
-    <html
-      lang="sl"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <header style={{ padding: 12, borderBottom: "1px solid #eee" }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <a href="/" style={{ fontWeight: 700, fontSize: 18, textDecoration: "none", color: "inherit" }}>
-                Kripto Davki 🇸🇮
-              </a>
-              <nav style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <a href="/dashboard" style={{ color: "#333", textDecoration: "none" }}>Nadzorna plošča</a>
-                <a href="/upload" style={{ color: "#333", textDecoration: "none" }}>Uvoz CSV</a>
-                <a href="/transactions" style={{ color: "#333", textDecoration: "none" }}>Transakcije</a>
-                <a href="/reports" style={{ color: "#333", textDecoration: "none" }}>Poročila</a>
-                <a href="/profile" style={{ color: "#333", textDecoration: "none" }}>Profil</a>
-              </nav>
-            </div>
-            <div>
-            </div>
-          </div>
-        </header>
-=======
     <html lang="sl">
       <head>
         <link rel="preconnect" href="https://api.fontshare.com" />
@@ -54,8 +30,8 @@ export default function RootLayout({
       </head>
       <body>
         <AppHeader />
->>>>>>> claude/elegant-dirac-KCdjI
         {children}
+        <RevealInit />
         <script dangerouslySetInnerHTML={{
           __html: `(function(){
             var stored=localStorage.getItem('dnd-theme');
@@ -78,14 +54,6 @@ export default function RootLayout({
               if(!bar)return;
               var on=function(){bar.classList.toggle('scrolled',window.scrollY>4);};
               window.addEventListener('scroll',on,{passive:true});on();
-            }
-            function initReveal(){
-              var els=document.querySelectorAll('.reveal');
-              if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
-              var io=new IntersectionObserver(function(entries){
-                entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
-              },{threshold:0.12,rootMargin:'0px 0px -6% 0px'});
-              els.forEach(function(el){io.observe(el);});
             }
             function initFaq(){
               document.querySelectorAll('.faq-item').forEach(function(item){
@@ -111,9 +79,9 @@ export default function RootLayout({
               });
             }
             if(document.readyState==='loading'){
-              document.addEventListener('DOMContentLoaded',function(){initTheme();initAppbar();initReveal();initFaq();initChips();});
+              document.addEventListener('DOMContentLoaded',function(){initTheme();initAppbar();initFaq();initChips();});
             } else {
-              initTheme();initAppbar();initReveal();initFaq();initChips();
+              initTheme();initAppbar();initFaq();initChips();
             }
           })();`
         }} />
