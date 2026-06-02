@@ -3,8 +3,29 @@ import { getUserFromServer } from "@/lib/supabase/server";
 import { getSubscription } from "@/lib/subscription";
 import CheckoutButton from "./checkout-button";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
+
 export const metadata: Metadata = {
-  title: "Cenik | DavkiNaDelnicah.si",
+  title: "Cenik — Pro načrt za FURS XML | DavkiNaDelnicah.si",
+  description:
+    "Pro načrt za 19 € letno: neomejene transakcije, DOH-KDVP in DOH-DIV XML za eDavki, pretekla davčna leta. Brez samodejne obnove.",
+  alternates: { canonical: `${APP_URL}/cenik` },
+  openGraph: {
+    title: "Cenik — Pro načrt za FURS XML | DavkiNaDelnicah.si",
+    description:
+      "19 € letno: DOH-KDVP in DOH-DIV XML za eDavki, neomejene transakcije, pretekla leta. Brez samodejne obnove.",
+    url: `${APP_URL}/cenik`,
+    siteName: "DavkiNaDelnicah.si",
+    type: "website",
+    locale: "sl_SI",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "DavkiNaDelnicah.si — Cenik" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cenik — Pro načrt za FURS XML | DavkiNaDelnicah.si",
+    description: "19 € letno: DOH-KDVP in DOH-DIV XML za eDavki, neomejene transakcije.",
+    images: ["/og-image.png"],
+  },
 };
 
 const CENIK_FAQS = [
@@ -164,6 +185,28 @@ export default async function CenikPage({ searchParams }: CenikPageProps) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Internal link to navodila */}
+      <section className="section" style={{ paddingTop: 0, paddingBottom: 64 }}>
+        <div className="wrap">
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexWrap: "wrap", gap: 16,
+            background: "var(--surface)", border: "1px solid var(--line)",
+            borderRadius: "var(--r-lg)", padding: "20px 24px",
+          }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Prvič uvažate CSV?</div>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>
+                Oglejte si navodila za izvoz iz Trading 212, Revolut, IBKR in ostalih posrednikov.
+              </p>
+            </div>
+            <a href="/navodila" className="btn btn-line btn-sm" style={{ flexShrink: 0 }}>
+              Navodila za uvoz CSV →
+            </a>
           </div>
         </div>
       </section>

@@ -1,9 +1,28 @@
 import type { Metadata } from "next";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
+
 export const metadata: Metadata = {
-  title: "Navodila za izvoz CSV | DavkiNaDelnicah.si",
+  title: "Navodila za izvoz CSV iz Trading 212, Revolut in IBKR | DavkiNaDelnicah.si",
   description:
-    "Korak-po-korak navodila za izvoz transakcijskega izpiska iz Trading 212, Revolut, Interactive Brokers, eToro, Binance in Coinbase.",
+    "Korak-po-korak navodila za izvoz transakcijskega izpiska iz Trading 212, Revolut, Interactive Brokers (IBKR), eToro, Binance in Coinbase za pripravo FURS davčne napovedi.",
+  alternates: { canonical: `${APP_URL}/navodila` },
+  openGraph: {
+    title: "Navodila za izvoz CSV iz Trading 212, Revolut in IBKR | DavkiNaDelnicah.si",
+    description:
+      "Korak-po-korak navodila za izvoz CSV izpiskov iz borznih posrednikov za pripravo DOH-KDVP davčne napovedi.",
+    url: `${APP_URL}/navodila`,
+    siteName: "DavkiNaDelnicah.si",
+    type: "website",
+    locale: "sl_SI",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Navodila za uvoz CSV" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Navodila za izvoz CSV iz Trading 212, Revolut in IBKR",
+    description: "Korak-po-korak navodila za izvoz CSV izpiskov iz borznih posrednikov.",
+    images: ["/og-image.png"],
+  },
 };
 
 interface BrokerGuide {
@@ -259,6 +278,16 @@ export default function NavodilaPage() {
           </p>
           <a href="mailto:podpora@davkinadelnicah.si" className="btn btn-primary">
             Pošlji vzorec CSV <span className="arr">→</span>
+          </a>
+        </div>
+
+        {/* Bottom nav links */}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 40 }}>
+          <a href="/cenik" className="btn btn-primary btn-sm">
+            Začni z izračunom <span className="arr">→</span>
+          </a>
+          <a href="/" className="btn btn-line btn-sm">
+            Nazaj na domačo stran
           </a>
         </div>
       </section>

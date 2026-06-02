@@ -3,22 +3,21 @@ import type { Metadata } from "next";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://davkinadelnicah.si";
 
 export const metadata: Metadata = {
-  title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+  title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
   description:
-    "Uvozi CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. XML za eDavki (Doh-KDVP, Doh-Div) v minutah.",
+    "Uvozite CSV iz Trading 212, Revolut ali IBKR, izračunajte FIFO kapitalski dobiček in generirajte XML za eDavki (DOH-KDVP, DOH-DIV). Za slovenske vlagatelje.",
   metadataBase: new URL(APP_URL),
+  alternates: {
+    canonical: APP_URL,
+  },
   openGraph: {
-    title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+    title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
     description:
-      "Uvozi CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. XML za eDavki v minutah.",
+      "Uvozite CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. DOH-KDVP in DOH-DIV XML za eDavki v minutah.",
     url: APP_URL,
     siteName: "DavkiNaDelnicah.si",
     type: "website",
     locale: "sl_SI",
-    // ⚠️ Ustvari /public/og-image.png (1200×630px) pred deploymentom.
-    // Priporočena vsebina: temno zelena (#01696F) ozadje, bel logotip DavkiNaDelnicah.si,
-    // headline "Davčna napoved brez glavobola", pod njim screenshot poročila.
-    // Orodje: og-playground.vercel.app ali Figma z @vercel/og.
     images: [
       {
         url: "/og-image.png",
@@ -30,13 +29,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "DavkiNaDelnicah.si — Davčna napoved brez glavobola",
+    title: "FURS XML za delnice, ETF-je in dividende | DavkiNaDelnicah.si",
     description:
-      "Uvozi CSV iz Trading 212, Revolut ali IBKR. Avtomatski FIFO izračun. XML za eDavki v minutah.",
+      "Uvozite CSV iz Trading 212, Revolut ali IBKR. FIFO izračun. XML za eDavki v minutah.",
     images: ["/og-image.png"],
-  },
-  alternates: {
-    canonical: APP_URL,
   },
 };
 
@@ -82,9 +78,50 @@ const FAQS = [
   { q: "Kako odpovem Pro naročnino?", a: "Pro naročnina velja eno leto. Po izteku ne obnovimo plačila samodejno — sam odločiš, ali jo naslednje leto podaljšaš. Že ustvarjena poročila ostanejo dostopna." },
 ];
 
+const JSON_LD_APP = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "DavkiNaDelnicah.si",
+  url: APP_URL,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  description:
+    "Orodje za slovenske vlagatelje: uvoz CSV iz Trading 212, Revolut in IBKR, avtomatski FIFO izračun kapitalskega dobička in generiranje XML za eDavki (DOH-KDVP, DOH-DIV).",
+  offers: {
+    "@type": "Offer",
+    price: "19",
+    priceCurrency: "EUR",
+    description: "Pro načrt — eno davčno leto, brez samodejne obnove",
+  },
+  inLanguage: "sl",
+  audience: {
+    "@type": "Audience",
+    geographicArea: { "@type": "Country", name: "Slovenia" },
+  },
+};
+
+const JSON_LD_FAQ = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
 export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_APP) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_FAQ) }}
+      />
+
       {/* HERO */}
       <section className="hero-mkt">
         <div className="wrap">
@@ -194,6 +231,52 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* HOW IT WORKS — SEO anchor section */}
+      <section className="section" id="kako-deluje" style={{paddingTop:0}}>
+        <div className="wrap">
+          <div className="reveal text-center" style={{maxWidth:"36em", margin:"0 auto 40px"}}>
+            <span className="eyebrow" style={{justifyContent:"center"}}>Kako deluje</span>
+            <h2 className="h-1" style={{marginTop:18}}>Od CSV do eDavki v treh korakih.</h2>
+          </div>
+          <div className="feat-grid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
+            <article className="feat reveal" style={{textAlign:"center"}}>
+              <div style={{
+                width:48,height:48,borderRadius:"50%",background:"var(--accent-tint,rgba(1,105,111,0.1))",
+                display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",
+                fontSize:20,fontWeight:700,color:"var(--accent)",
+              }}>1</div>
+              <h3 style={{fontSize:16}}>Uvoz CSV</h3>
+              <p style={{fontSize:14}}>
+                Povlecite ali naložite CSV datoteko iz Trading 212, Revolut, Interactive Brokers (IBKR), Binance, Coinbase ali Kraken. Posrednik se zazna samodejno.
+              </p>
+            </article>
+            <article className="feat reveal d1" style={{textAlign:"center"}}>
+              <div style={{
+                width:48,height:48,borderRadius:"50%",background:"var(--accent-tint,rgba(1,105,111,0.1))",
+                display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",
+                fontSize:20,fontWeight:700,color:"var(--accent)",
+              }}>2</div>
+              <h3 style={{fontSize:16}}>FIFO izračun</h3>
+              <p style={{fontSize:14}}>
+                Aplikacija sparuje vsako prodajo delnic ali ETF-jev z najstarejšim ujemajočim nakupom. Vrednosti se pretvorijo v EUR po referenčnih tečajih ECB — natanko po zahtevah FURS.
+              </p>
+            </article>
+            <article className="feat reveal d2" style={{textAlign:"center"}}>
+              <div style={{
+                width:48,height:48,borderRadius:"50%",background:"var(--accent-tint,rgba(1,105,111,0.1))",
+                display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",
+                fontSize:20,fontWeight:700,color:"var(--accent)",
+              }}>3</div>
+              <h3 style={{fontSize:16}}>XML za eDavki</h3>
+              <p style={{fontSize:14}}>
+                Prenesete DOH-KDVP za kapitalski dobiček in DOH-DIV za dividende ter datoteki neposredno uvozite v portal eDavki.{" "}
+                <a href="/navodila" style={{color:"var(--accent)"}}>Navodila za uvoz →</a>
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       {/* COMPARE */}
       <section className="section" style={{paddingTop:0}}>
         <div className="wrap">
@@ -268,6 +351,7 @@ export default function HomePage() {
             <div className="row center gap-3" style={{flexWrap:"wrap"}}>
               <a href="/upload" className="btn btn-primary btn-lg">Naloži prvi izpisek <span className="arr">→</span></a>
               <a href="/cenik" className="btn btn-line btn-lg">Cenik</a>
+              <a href="/navodila" className="btn btn-ghost btn-lg">Navodila za uvoz</a>
             </div>
           </div>
         </div>
@@ -299,8 +383,8 @@ export default function HomePage() {
             <div className="foot-col">
               <h4>Podpora</h4>
               <a href="#faq">Vprašanja</a>
+              <a href="/navodila">Navodila za uvoz</a>
               <a href="mailto:podpora@davkinadelnicah.si">E-pošta</a>
-              <a href="#">Dokumentacija</a>
             </div>
             <div className="foot-col">
               <h4>Pravno</h4>
