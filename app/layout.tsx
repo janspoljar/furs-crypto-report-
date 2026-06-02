@@ -51,8 +51,6 @@ export default async function RootLayout({
               </nav>
             </div>
             <div>
-              {/* @ts-expect-error server -> client prop */}
-              <UserNav initialUser={initialUser} />
             </div>
           </div>
         </header>
